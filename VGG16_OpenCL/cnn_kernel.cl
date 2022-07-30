@@ -354,5 +354,3 @@ __kernel void softmax_ker(	__global float* results,
 	
 	return;
 }
-
-// carriage return
