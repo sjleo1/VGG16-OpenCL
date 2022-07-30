@@ -10,7 +10,6 @@ extern const int INPUT_DIM[];
 extern const int OUTPUT_DIM[];
 extern const int NBYN[];
 
-void parallelCNNInit();
 void parallelCNN(float* image, float** networks, int* labels, float* confidences, int num_images);
 void showInfo();
 char* getSourceCode(const char* file_name, size_t* len);

@@ -141,12 +141,7 @@ int main(int argc, char* argv[]) {
 		}
 
 	// OpenCL
-	parallelCNNInit();
-	time_t start, end;
-	start = clock();
 	parallelCNN(images, filters_and_biases, labels, confidences_par, num_of_image);
-	end = clock();
-	printf("Elapsed time (OpenCL): %.2f sec.\n", (double)(end - start) / CLK_TCK);
 
 	// Sequential
 	sequentialCNN(images, network, labels, confidences_seq, num_of_image);
@@ -157,7 +152,7 @@ int main(int argc, char* argv[]) {
 
 	FILE* fp = fopen(argv[2], "w");
 	for (int i = 0; i < num_of_image; i++) {
-		fprintf(fp, "Image %04d : %d : %-10s\t%f\n", i, labels[i], CLASS_NAME[labels[i]], confidences[i]);
+		fprintf(fp, "Image %04d : %d : %-10s\t%f\n", i, labels[i], CLASS_NAME[labels[i]], confidences_par[i]);
 		if (labels[i] == labels_ans[i])
 			acc++;
 	}
@@ -169,7 +164,8 @@ int main(int argc, char* argv[]) {
 	free(images);
 	free(network);
 	free(labels);
-	free(confidences);
+	free(confidences_seq);
+	free(confidences_par)
 	free(labels_ans);
 
 	return 0;
