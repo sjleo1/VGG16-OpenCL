@@ -136,6 +136,14 @@
   <ItemGroup>
     <ClInclude Include="customlib.h" />
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="answer.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="images.bin" />
+    <None Include="labels.bin" />
+    <None Include="network.bin" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
