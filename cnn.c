@@ -146,6 +146,12 @@ model* loadNetwork() {
 	return network;
 }
 
+void unloadNetwork(model* model_) {
+	free_c(model_->weights);
+	free_c(model_->biases);
+	free_c(model_->ptr);
+}
+
 images* loadImages(const size_t num_images) {
 	const size_t num_pixels = 32 * 32 * 3;
 	const size_t image_size = sizeof(float) * num_pixels;
@@ -159,4 +165,9 @@ images* loadImages(const size_t num_images) {
 		image->at[i] = image->ptr + (i * num_pixels);
 
 	return image;
+}
+
+void unloadImages(images* images_) {
+	free_c(images_->at);
+	free_c(images_->ptr);
 }

@@ -26,4 +26,6 @@ extern const size_t RES[];
 extern void* readByte(const char*, size_t);
 extern void verify(void);
 extern model* loadNetwork();
+extern void unloadNetwork(model*);
 extern images* loadImages(const size_t);
+extern void unloadImages(images*);
