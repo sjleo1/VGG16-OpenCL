@@ -33,6 +33,9 @@
     <ClCompile Include="parallel.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="cnn.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="sequential.c">
       <Filter>Source Files</Filter>
     </ClCompile>
