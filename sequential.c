@@ -4,7 +4,10 @@
 #include "cnn.h"
 #include "customlib.h"
 
-#define ReLU(x) (x) > 0 ? (x) : 0
+static inline float ReLU(float val) {
+	if (val > 0.0)	return	val;
+	else			return	0.0;
+}
 
 static void convolution(
 	const float input[], float output[],
@@ -39,10 +42,8 @@ static void convolution(
 			in_channel += channel_size;
 		}
 
-		for (unsigned int act = 0; act < channel_size; ++act) {
-			*output = ReLU(*output + *bias);
-			++output;
-		}
+		for (unsigned int act = 0; act < channel_size; ++act)
+			*output++ = ReLU(*output + *bias);
 		++bias;
 	}
 }
@@ -83,12 +84,7 @@ static void fc(
 	for (unsigned int out_n = 0; out_n < num_outnodes; ++out_n) {
 		for (unsigned int in_n = 0; in_n < num_innodes; ++in_n)
 			*write_to += input[in_n] * *weight++;
-
-		*write_to += *bias++;
-
-		*write_to = ReLU(*write_to);
-
-		++write_to;
+		*write_to++ = ReLU(*write_to + *bias++);
 	}
 }
 
