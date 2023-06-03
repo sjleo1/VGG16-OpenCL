@@ -134,6 +134,7 @@
     <ClCompile Include="cnn.c" />
     <ClCompile Include="customlib.c" />
     <ClCompile Include="main.c" />
+    <ClCompile Include="parallel.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="clproject.h" />
@@ -147,6 +148,7 @@
     <None Include="images.bin" />
     <None Include="labels.bin" />
     <None Include="network.bin" />
+    <None Include="test.cl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
