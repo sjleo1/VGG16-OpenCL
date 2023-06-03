@@ -14,4 +14,6 @@
 
 extern void printDeviceInfo();
 extern char* getKernelSourceCode(const char*, size_t*);
-extern void printBuildError(cl_program, cl_device_id, cl_int);
+extern void printBuildError(const cl_program, const cl_uint, const cl_device_id*, const cl_int);
+extern cl_device_id* selectPlatformAndDevices(cl_platform_id*, cl_uint*);
+extern cl_program buildCLProgram(cl_context, cl_uint, const char**, cl_uint, const cl_device_id*, const char*);
