@@ -13,6 +13,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="OpenCL Kernel Files">
+      <UniqueIdentifier>{9ae2d9ad-de61-4f89-9f5d-fed07f57e850}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.c">
@@ -21,10 +24,47 @@
     <ClCompile Include="customlib.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="clproject.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="cnn.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="parallel.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="sequential.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="customlib.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="clproject.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="cnn.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="images.bin">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="labels.bin">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="network.bin">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="test.cl">
+      <Filter>OpenCL Kernel Files</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="answer.txt">
+      <Filter>Resource Files</Filter>
+    </Text>
   </ItemGroup>
 </Project>
