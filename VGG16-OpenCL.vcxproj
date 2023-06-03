@@ -133,6 +133,7 @@
     <ClCompile Include="cnn.c" />
     <ClCompile Include="customlib.c" />
     <ClCompile Include="main.c" />
+    <ClCompile Include="sequential.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cnn.h" />
