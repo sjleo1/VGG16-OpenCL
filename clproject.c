@@ -154,23 +154,142 @@ char* getKernelSourceCode(const char* file_name, size_t* source_length) {
 	return source_code;
 }
 
-void printBuildError(cl_program program, cl_device_id device, cl_int build_err_num) {
-	if (build_err_num != CL_BUILD_PROGRAM_FAILURE) return;
+void printBuildError(
+	const cl_program program,
+	const cl_uint num_devices,
+	const cl_device_id* devices,
+	const cl_int build_err_num)
+{
+	if (build_err_num == CL_SUCCESS)
+		return;
+	else if (build_err_num == CL_BUILD_PROGRAM_FAILURE) {
+		cl_int err_num;
 
+		for (unsigned int i = 0; i < num_devices; ++i) {
+			size_t log_size;
+			err_num = clGetProgramBuildInfo(program, devices[i], CL_PROGRAM_BUILD_LOG, 0, NULL, &log_size);
+			CHECK_ERROR(err_num);
+
+			if (log_size != 0) {
+				char* log = (char*)malloc_c(log_size + 1);
+				err_num = clGetProgramBuildInfo(program, devices[i], CL_PROGRAM_BUILD_LOG, log_size, log, NULL);
+				CHECK_ERROR(err_num);
+
+				log[log_size] = '\0';
+				fprintf(stderr, "OpenCL compiler error:\n%s", log);
+
+				free_c(log);
+			}
+		}
+
+		exit(EXIT_FAILURE);
+	}
+	else
+		CHECK_ERROR(build_err_num);
+}
+
+cl_device_id* selectPlatformAndDevices(cl_platform_id* platform, cl_uint* num_devices) {
 	cl_int err_num;
 
-	size_t log_size;
-	err_num = clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG, 0, NULL, &log_size);
+	// Check the number of platforms available
+	cl_uint num_platforms;
+	err_num = clGetPlatformIDs(0, NULL, &num_platforms);
 	CHECK_ERROR(err_num);
 
-	char* log = (char*)malloc_c(log_size + 1);
-	err_num = clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG, log_size, log, NULL);
+	// Get the platform number from user
+	printf("Platform number: ");
+	cl_uint platform_num;
+	scanf("%i", &platform_num);
+
+	// Validate platform number
+	if (!(platform_num < num_platforms)) {
+		printf("Invalid platform number");
+		exit(1);
+	}
+
+	// Get all platform IDs
+	cl_platform_id* platforms = (cl_platform_id*)malloc_c(sizeof(cl_platform_id) * num_platforms);
+	clGetPlatformIDs(num_platforms, platforms, NULL);
+
+	// Specify platform ID
+	*platform = platforms[platform_num];
+	free_c(platforms);
+
+	// Check the number of devices available on the platform selected
+	cl_uint total_num_devices;
+	err_num = clGetDeviceIDs(*platform, CL_DEVICE_TYPE_ALL, 0, NULL, &total_num_devices);
 	CHECK_ERROR(err_num);
 
-	log[log_size] = '\0';
-	fprintf(stderr, "OpenCL compiler error:\n%s", log);
+	// Get the number of devices to select from user
+	printf("Number of devices: ");
+	scanf("%i", num_devices);
 
-	free_c(log);
+	// Validate the number of devices got from the user
+	if (total_num_devices < *num_devices) {
+		printf("Invalid number of devices. Expected an unsigned integer value less than %i", total_num_devices);
+		exit(1);
+	}
 
-	exit(EXIT_FAILURE);
+	// Get the device numbers
+	printf("Device number(s): ");
+	cl_uint* device_nums = (cl_uint*)malloc_c(sizeof(cl_uint) * *num_devices);
+	for (unsigned int i = 0; i < *num_devices; ++i) {
+		scanf("%i", device_nums + i);
+
+		// Validate each device number
+		if (!(device_nums[i] < *num_devices)) {
+			printf("Invalid device number. Maximum device number possible is %i", total_num_devices - 1);
+			exit(1);
+		}
+	}
+
+	// Get all device IDs on the platform specified
+	cl_device_id* all_devices = (cl_device_id*)malloc_c(sizeof(cl_device_id) * total_num_devices);
+	err_num = clGetDeviceIDs(*platform, CL_DEVICE_TYPE_ALL, *num_devices, all_devices, NULL);
+	CHECK_ERROR(err_num);
+
+	// Allocate memory for device IDs selected by user which will be returned
+	cl_device_id* selected_devices = (cl_device_id*)malloc_c(sizeof(cl_device_id) * *num_devices);
+	for (unsigned int i = 0; i < *num_devices; ++i)
+		selected_devices[i] = all_devices[device_nums[i]];
+
+	free_c(all_devices);
+
+	return selected_devices;
+}
+
+cl_program buildCLProgram(
+	cl_context context,
+	cl_uint num_kernels_files,
+	const char** kernel_file_names,
+	cl_uint num_devices,
+	const cl_device_id* devices,
+	const char* build_option)
+{
+	cl_int err_num;
+
+	// Read kernel source code
+	printf("Reading kernel source code files...\n");
+	char** kernel_source_codes = (char**)malloc_c(sizeof(char*) * num_kernels_files);
+	size_t* kernel_source_sizes = (size_t*)malloc_c(sizeof(size_t) * num_kernels_files);
+	for (unsigned int i = 0; i < num_kernels_files; ++i)
+		kernel_source_codes[i] = getKernelSourceCode(kernel_file_names[i], &kernel_source_sizes[i]);
+
+	// Create program object
+	printf("Creating a program object...\n");
+	cl_program program = clCreateProgramWithSource(context, num_kernels_files, kernel_source_codes, kernel_source_sizes, &err_num);
+	CHECK_ERROR(err_num);
+
+	// Free memory
+	for (unsigned int i = 0; i < num_kernels_files; ++i)
+		free_c(kernel_source_codes[i]);
+	free_c(kernel_source_codes);
+	free_c(kernel_source_sizes);
+
+	// Build program object
+	printf("Building the program object...\n");
+	err_num = clBuildProgram(program, num_devices, devices, build_option, NULL, NULL);
+	printBuildError(program, num_devices, devices, err_num);
+
+	return program;
 }
