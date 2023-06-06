@@ -55,7 +55,9 @@
     <None Include="network.bin">
       <Filter>Resource Files</Filter>
     </None>
-    <None Include="test.cl" />
+    <None Include="maxp.cl">
+      <Filter>OpenCL Kernel Files</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Text Include="answer.txt">
