@@ -139,7 +139,7 @@ void verify(const result* output) {
 			wrong_answers[cnt_wrong++] = i;
 	}
 
-	printf("Accuracy: %.2lf%%\n", (double)(num_images - cnt_wrong) / (double)num_images);
+	printf("Accuracy: %.2lf%%\n", 100.0 * (double)(num_images - cnt_wrong) / (double)num_images);
 	if (cnt_wrong) {
 		printf("%zu wrong answers:\n", cnt_wrong);
 		printf("===================================================\n");
@@ -156,7 +156,7 @@ void verify(const result* output) {
 	}
 
 	double time_spent = (double)(output->end_time - output->start_time) / CLOCKS_PER_SEC;
-	printf("\nElapsed time: %.3lf seconds", time_spent);
+	printf("Elapsed time: %.3lf seconds", time_spent);
 
 	free_c(wrong_answers);
 	unloadResult(answer);
