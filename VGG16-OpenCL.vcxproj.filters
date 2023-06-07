@@ -46,10 +46,8 @@
     <None Include="network.bin">
       <Filter>Resource Files</Filter>
     </None>
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="answer.txt">
+    <None Include="answer.bin">
       <Filter>Resource Files</Filter>
-    </Text>
+    </None>
   </ItemGroup>
 </Project>
