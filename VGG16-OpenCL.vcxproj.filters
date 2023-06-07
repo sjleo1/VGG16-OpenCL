@@ -33,9 +33,6 @@
     <ClCompile Include="parallel.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="cnn.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="sequential.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -61,13 +58,11 @@
     <None Include="network.bin">
       <Filter>Resource Files</Filter>
     </None>
-    <None Include="test.cl">
+    <None Include="answer.bin">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="maxp.cl">
       <Filter>OpenCL Kernel Files</Filter>
     </None>
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="answer.txt">
-      <Filter>Resource Files</Filter>
-    </Text>
   </ItemGroup>
 </Project>

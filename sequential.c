@@ -116,11 +116,14 @@ static int argmax(float arr[], size_t size) {
 	return (int)index;
 }
 
-void sequential(const images* images, const model* network, int labels[], float confidences[]) {
+result* sequential(const images* images, const model* network) {
 	float* fmaps[21];
 	for (int i = 0; i < 21; ++i)
 		fmaps[i] = (float*)malloc_c(sizeof(float) * RES[i] * RES[i] * WIDTHS[i][1]);
 
+	result* output = loadResult(images->count, false);
+
+	output->start_time = clock();
 	for (unsigned int i = 0; i < images->count; ++i) {
 		printf("Running image inference on CPU... [%u/%zd]\t", i + 1, images->count);
 		const float* buffer = images->at[i];
@@ -145,14 +148,15 @@ void sequential(const images* images, const model* network, int labels[], float 
 
 		softmax(fmaps[20], 10);
 
-		labels[i] = argmax(fmaps[20], 10);
-		confidences[i] = fmaps[20][labels[i]];
+		output->labels[i] = argmax(fmaps[20], 10);
+		output->confs[i] = fmaps[20][output->labels[i]];
 		printf("\r");
 	}
 	printf("\nDone.\n");
+	output->end_time = clock();
 
 	for (int i = 0; i < 21; ++i)
 		free_c(fmaps[i]);
 
-	return;
+	return output;
 }
