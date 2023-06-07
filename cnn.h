@@ -4,6 +4,9 @@
 #pragma warning (disable: 4996)
 #endif
 
+#include <time.h>
+#include <stdbool.h>
+
 typedef struct Model {
 	float* ptr;
 	float** weights;
@@ -34,7 +37,7 @@ extern const size_t WIDTHS[][2];
 extern const size_t RES[];
 
 extern void* readByte(const char*, size_t);
-extern void verify(void);
+extern void verify(const result*);
 extern model* loadNetwork();
 extern void unloadNetwork(model*);
 extern images* loadImages(const size_t);

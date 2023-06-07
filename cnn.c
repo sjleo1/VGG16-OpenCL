@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <time.h>
+#include <math.h>
 #include "cnn.h"
 #include "customlib.h"
 
@@ -124,8 +125,42 @@ void* readByte(const char* file_name, size_t size) {
 	return buffer;
 }
 
-void verify(void) {
-	// TODO
+void verify(const result* output) {
+	const size_t num_images = output->count;
+
+	result* answer = loadResult(num_images, true);
+
+	size_t cnt_wrong = 0;
+	int* wrong_answers = (int*)malloc_c(sizeof(int) * num_images);
+	for (unsigned int i = 0; i < num_images; ++i) {
+		double diff = fabs(output->confs[i] - answer->confs[i]);
+
+		if (!(output->labels[i] == answer->labels[i] && diff < 0.001))
+			wrong_answers[cnt_wrong++] = i;
+	}
+
+	printf("Accuracy: %.2lf%%\n", (double)(num_images - cnt_wrong) / (double)num_images);
+	if (cnt_wrong) {
+		printf("%zu wrong answers:\n", cnt_wrong);
+		printf("===================================================\n");
+		printf("Image       Category #              Confidence\n");
+		printf("  #     Expected - Result       Expected - Result\n");
+		printf("===================================================\n");
+		for (unsigned int i = 0; i < cnt_wrong; ++i) {
+			int idx = wrong_answers[i];
+			printf(" % 4d         %2d - %-2d           %8f - %-8f\n", idx,
+				answer->labels[idx], output->labels[idx],
+				answer->confs[idx], output->confs[idx]);
+		}
+		printf("===================================================\n");
+	}
+
+	double time_spent = (double)(output->end_time - output->start_time) / CLOCKS_PER_SEC;
+	printf("\nElapsed time: %.3lf seconds", time_spent);
+
+	free_c(wrong_answers);
+	unloadResult(answer);
+
 	return;
 }
 
