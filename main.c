@@ -3,26 +3,6 @@
 #include "customlib.h"
 
 extern result* sequential(const images*, const model*);
-
-void runInference() {
-	const size_t n = 10;
-
-	images* input = loadImages(n);
-	model* network = loadNetwork();
-
-	result* output = sequential(input, network);
-
-	verify(output);
-
-	unloadImages(input);
-	unloadNetwork(network);
-	unloadResult(output);
-}
-
-
-#include "cnn.h"
-#include "customlib.h"
-
 extern result* parallel(const images*, const model*);
 
 void runInference() {
@@ -30,14 +10,27 @@ void runInference() {
 
 	images* input = loadImages(n);
 	model* network = loadNetwork();
+	result* output;
 
-	result* output = parallel(input, network);
+	int option;
+	printf("0: Sequential\n1: Parallel\n-> ");
+	scanf("%d", &option);
 
-	verify(output);
+	if (option == 0) {
+		output = sequential(input, network);
+		verify(output);
+		unloadResult(output);
+	}
+	else if (option == 1) {
+		output = parallel(input, network);
+		verify(output);
+		unloadResult(output);
+	}
+	else
+		printf("Invalid option");
 
 	unloadImages(input);
 	unloadNetwork(network);
-	unloadResult(output);
 }
 
 
