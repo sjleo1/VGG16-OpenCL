@@ -4,9 +4,24 @@
 
 const size_t model_size = 60980520;
 
+// `images.bin`: A binary file of the
+// CIFAR 10 dataset
 const char image_file[] = "images.bin";
 
+// `labels.bin`: Labels of the 10000 images of
+// the CIFAR 10 dataset
+const char label_file[] = "labels.bin";
+
+// `network.bin`: Pre-trained weights and biases
+// of the model
 const char network_file[] = "network.bin";
+
+// `answer.bin`: Target result of the operation.
+// It contains the predicted labels and confidences
+// of the operation. Note that the result of the
+// operation should match with the answer file, not
+// the labels file.
+const char answer_file[] = "answer.bin";
 
 const char* CLASS_NAME[] = {
 	"airplane",

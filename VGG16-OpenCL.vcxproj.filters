@@ -21,10 +21,30 @@
     <ClCompile Include="customlib.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="cnn.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="customlib.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="cnn.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="images.bin">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="labels.bin">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="network.bin">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="answer.bin">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

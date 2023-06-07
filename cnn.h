@@ -18,7 +18,9 @@ typedef struct Images {
 
 extern const size_t model_size;
 extern const char image_file[];
+extern const char label_file[];
 extern const char network_file[];
+extern const char answer_file[];
 extern const char* CLASS_NAME[];
 extern const size_t WIDTHS[][2];
 extern const size_t RES[];
