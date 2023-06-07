@@ -152,8 +152,10 @@ static void initCL(
 	*program = buildCLProgram(*context, (cl_uint)num_kernel_files, kernel_files, *num_devices, devices, build_option);
 }
 
-void parallel(const images* images, const model* network, int labels[], float confidences[]) {
+result* parallel(const images* images, const model* network) {
 	cl_int err_num;
+
+	result* output = loadResult(images->count, false);
 
 	// Print device information
 	printDeviceInfo();
@@ -189,8 +191,10 @@ void parallel(const images* images, const model* network, int labels[], float co
 	// output of last fc layer
 	cl_mem* mem_results = (cl_mem*)malloc_c(sizeof(cl_mem) * images->count);
 
+	printf("Operation started on the OpenCL device. Please wait...\n");
+	output->start_time = clock();
 	// Create memory objects and write data to memory them
-	printf("Copying data to memory objects...\n");
+	// printf("Copying data to memory objects...\n");
 	for (int i = 0; i < 21; ++i) {
 		// Create memory objects for feature maps
 		size_t fmap_size = sizeof(float) * RES[i] * RES[i] * WIDTHS[i][1];
@@ -229,9 +233,9 @@ void parallel(const images* images, const model* network, int labels[], float co
 		}
 	}
 
-	printf("Running image inference on the OpenCL devices...\n");
+	// printf("Running image inference on the OpenCL devices...\n");
 	for (unsigned int i = 0; i < images->count; ++i) {
-		printf("[%u/%zd]", i + 1, images->count);
+		// printf("[%u/%zd]", i + 1, images->count);
 		const float* buffer = images->at[i];
 		cl_mem mem_buffer = mem_images[i];
 		for (unsigned int layer = 0; layer < 21; ++layer) {
@@ -266,14 +270,15 @@ void parallel(const images* images, const model* network, int labels[], float co
 
 		softmax(fmaps[20], 10);
 
-		labels[i] = argmax(fmaps[20], 10);
-		confidences[i] = fmaps[20][labels[i]];
-		printf("\r");
+		output->labels[i] = argmax(fmaps[20], 10);
+		output->confs[i] = fmaps[20][output->labels[i]];
+		// printf("\r");
 	}
+	output->end_time = clock();
 	printf("Done.        \n");
 
 	for (int i = 0; i < 21; ++i)
 		free_c(fmaps[i]);
 
-	return;
+	return output;
 }
