@@ -61,13 +61,11 @@
     <None Include="network.bin">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="answer.bin">
+      <Filter>Resource Files</Filter>
+    </None>
     <None Include="test.cl">
       <Filter>OpenCL Kernel Files</Filter>
     </None>
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="answer.txt">
-      <Filter>Resource Files</Filter>
-    </Text>
   </ItemGroup>
 </Project>
