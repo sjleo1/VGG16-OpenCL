@@ -62,19 +62,22 @@ The VGG16 model gained its reputation from the use of small 3 $\times$ 3 convolu
 
 ## Results
 
- * **In Serial**
-    | Processor | Elapsed Time |
-    |:-|-:|
-    | `Intel i5-10400` | ? seconds |
-    | `Intel i5-1240P` | ? seconds |
-    | `Intel m3-6Y30` | $\gt$ ? seconds |
- * **In Parallel**
-    | Processor | Elapsed Time |
-    |:-|-:|
-    | `Nvidia RTX 3060` | ? seconds |
-    | `Intel Iris Xe Graphics` 80 EU | ? seconds |
-    | `Intel UHD Graphics 630` | ? seconds |
-    | `Intel HD Graphics 515` | ? seconds |
+### Sequential Code
+
+| Processor | Memory | Elapsed Time (500 images) | Elapsed Time per Image (500 images) |
+|:-:|:-:|:-:|:-:|
+| `Intel i5-1240P` | 16 GB LPDDR5 | 467.427 seconds | 0.9349 seconds |
+| `Intel i5-10400` | 32 GB DDR4 | 613.509 seconds | 1.2270 seconds |
+| `Intel m3-6Y30` | 4 GB LPDDR3 | 1345.945 seconds | 2.6919 seconds |
+
+### Parallel Code
+
+| Processor | Dedicated Memory | Elapsed Time | Elapsed Time per Image |
+|:-:|:-:|:-:|:-:|
+| `Nvidia RTX 3060` | 12 GB GDDR6 | ? seconds | ? seconds |
+| `Intel Iris Xe Graphics (80EU)` | No | ? seconds | ? seconds |
+| `Intel UHD Graphics 630` | No | ? seconds | ? seconds |
+| `Intel HD Graphics 515` | No | ? seconds | ? seconds |
 
 
 ## License
