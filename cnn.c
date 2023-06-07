@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <stdbool.h>
+#include <time.h>
 #include "cnn.h"
 #include "customlib.h"
 
@@ -185,4 +187,30 @@ images* loadImages(const size_t num_images) {
 void unloadImages(images* images_) {
 	free_c(images_->at);
 	free_c(images_->ptr);
+}
+
+result* loadResult(const size_t num_images, bool load_answer) {
+	result* result_ = (result*)malloc_c(sizeof(result));
+	result_->count = num_images;
+	result_->labels = (int*)malloc_c(sizeof(int) * result_->count);
+	result_->confs = (float*)malloc_c(sizeof(float) * result_->count);
+
+	if (load_answer) {
+		FILE* fp_answer = fopen_c(answer_file, "rb");
+
+		for (unsigned int i = 0; i < result_->count; ++i) {
+			size_t size_lbls = fread_c(&(result_->labels[i]), sizeof(int), 1, fp_answer);
+			size_t size_confs = fread_c(&(result_->confs[i]), sizeof(float), 1, fp_answer);
+		}
+
+		fclose_c(fp_answer);
+	}
+
+	return result_;
+}
+
+extern void unloadResult(result* result_) {
+	free_c(result_->labels);
+	free_c(result_->confs);
+	free_c(result_);
 }
