@@ -62,7 +62,7 @@ static inline void maxp(cl_command_queue command_queue, cl_kernel kernel, cl_mem
 	cl_int err_num;
 	cl_uint work_dim = 3;
 	const size_t global_work_size[3] = { out_resolution, out_resolution, width };
-	const size_t local_work_size[3] = { 1, 1, 1 };
+	const size_t local_work_size[3] = { out_resolution, out_resolution, 1 };
 
 	err_num = clSetKernelArg(kernel, 0, sizeof(cl_mem), input);
 	err_num |= clSetKernelArg(kernel, 1, sizeof(cl_mem), output);
