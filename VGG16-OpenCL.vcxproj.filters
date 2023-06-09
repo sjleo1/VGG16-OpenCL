@@ -61,5 +61,11 @@
     <None Include="maxp.cl">
       <Filter>OpenCL Kernel Files</Filter>
     </None>
+    <None Include="conv.cl">
+      <Filter>OpenCL Kernel Files</Filter>
+    </None>
+    <None Include="memset.cl">
+      <Filter>OpenCL Kernel Files</Filter>
+    </None>
   </ItemGroup>
 </Project>
