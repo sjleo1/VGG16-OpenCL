@@ -144,8 +144,10 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="answer.bin" />
+    <None Include="conv.cl" />
     <None Include="images.bin" />
     <None Include="labels.bin" />
+    <None Include="memset.cl" />
     <None Include="network.bin" />
     <None Include="maxp.cl" />
   </ItemGroup>

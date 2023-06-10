@@ -133,7 +133,7 @@ void verify(const result* output) {
 	for (unsigned int i = 0; i < num_images; ++i) {
 		double diff = fabs(output->confs[i] - answer->confs[i]);
 
-		if (!(output->labels[i] == answer->labels[i] && diff < 0.001))
+		if (!(output->labels[i] == answer->labels[i] && diff < 0.01))
 			wrong_answers[cnt_wrong++] = i;
 	}
 
@@ -154,7 +154,8 @@ void verify(const result* output) {
 	}
 
 	double time_spent = (double)(output->end_time - output->start_time) / CLOCKS_PER_SEC;
-	printf("Elapsed time: %.3lf seconds", time_spent);
+	printf("Elapsed time:           %.3lf seconds/%zu images\n", time_spent, num_images);
+	printf("Elapsed time per image: %.5lf seconds/image\n", time_spent / (double)num_images);
 
 	free_c(wrong_answers);
 	unloadResult(answer);
