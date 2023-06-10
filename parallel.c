@@ -14,14 +14,60 @@ const char* kernel_files[] = {
 	"memset.cl"
 };
 
-char build_option[128] = "-cl-fast-relaxed-math";
-
 static inline float ReLU(float val) {
 	if (val > 0.0)	return	val;
 	else			return	0.0;
 }
 
-static inline void convolution(
+static size_t operation_per_item;
+static void setOptimalWorkGroupSize(cl_device_id device) {
+	cl_int err_num;
+
+	size_t max_work_group_size;
+	err_num = clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(size_t), &max_work_group_size, NULL);
+	CHECK_ERROR(err_num);
+
+	if (max_work_group_size > 512)
+		operation_per_item = 1;
+	else if (max_work_group_size > 128)
+		operation_per_item = 2;
+	else
+		operation_per_item = 4;
+}
+
+static inline void convolutionLow(
+	cl_command_queue command_queue,
+	cl_kernel kernel,
+	cl_mem* input,
+	cl_mem* output,
+	cl_mem* weight,
+	cl_mem* bias,
+	const size_t in_width,
+	const size_t out_width,
+	const size_t resolution)
+{
+	cl_int err_num;
+	cl_uint work_dim = 3;
+	const size_t global_work_size[3] = { resolution / operation_per_item, resolution / operation_per_item, out_width };
+	const size_t local_work_size[3] = { resolution / operation_per_item, resolution / operation_per_item, 1 };
+
+	err_num = clSetKernelArg(kernel, 0, sizeof(cl_mem), input);
+	err_num |= clSetKernelArg(kernel, 1, sizeof(cl_mem), output);
+	err_num |= clSetKernelArg(kernel, 2, sizeof(cl_mem), weight);
+	err_num |= clSetKernelArg(kernel, 3, sizeof(cl_mem), bias);
+	err_num |= clSetKernelArg(kernel, 4, sizeof(unsigned short), &(unsigned short)in_width);
+	err_num |= clSetKernelArg(kernel, 5, sizeof(unsigned short), &(unsigned short)out_width);
+	err_num |= clSetKernelArg(kernel, 6, sizeof(unsigned char), &(unsigned char)resolution);
+	err_num |= clSetKernelArg(kernel, 7, sizeof(float) * resolution * resolution, NULL);
+	CHECK_ERROR(err_num);
+
+	err_num = clEnqueueNDRangeKernel(command_queue, kernel, work_dim, NULL, global_work_size, local_work_size, 0, NULL, NULL);
+	CHECK_ERROR(err_num);
+
+	return;
+}
+
+static inline void convolutionHigh(
 	cl_command_queue command_queue,
 	cl_kernel kernel,
 	cl_mem* input,
@@ -143,7 +189,12 @@ static void initCL(
 	*command_queue = clCreateCommandQueue(*context, *devices, CL_QUEUE_PROFILING_ENABLE, &err_num);
 	CHECK_ERROR(err_num);
 
+	// Set optimal work group size
+	setOptimalWorkGroupSize(*devices);
+
 	// Create and build a program
+	char build_option[128];
+	sprintf(build_option, "-cl-fast-relaxed-math -D OPI=%zu", operation_per_item);
 	*program = buildCLProgram(*context, (cl_uint)num_kernel_files, kernel_files, *num_devices, devices, build_option);
 }
 
@@ -169,8 +220,12 @@ result* parallel(const images* images, const model* network) {
 	cl_kernel kernel_maxp = clCreateKernel(program, "maxp", &err_num);
 	CHECK_ERROR(err_num);
 
-	printf("Creating kernel \'%s\'...\n", "conv");
-	cl_kernel kernel_conv = clCreateKernel(program, "conv", &err_num);
+	printf("Creating kernel \'%s\'...\n", "conv_low");
+	cl_kernel kernel_conv_low = clCreateKernel(program, "conv_low", &err_num);
+	CHECK_ERROR(err_num);
+
+	printf("Creating kernel \'%s\'...\n", "conv_high");
+	cl_kernel kernel_conv_high = clCreateKernel(program, "conv_high", &err_num);
 	CHECK_ERROR(err_num);
 
 	// Allocate memory for feature maps (sequential code)
@@ -265,7 +320,10 @@ result* parallel(const images* images, const model* network) {
 					const size_t in_size = sizeof(float) * res * res * in_width;
 					const size_t out_size = sizeof(float) * res * res * out_width;
 
-					convolution(command_queue, kernel_conv, &mem_buffer, &mem_fmaps[layer], &mem_weights[layer], &mem_biases[layer], in_width, out_width, res);
+					if (layer < 9)
+						convolutionLow(command_queue, kernel_conv_low, &mem_buffer, &mem_fmaps[layer], &mem_weights[layer], &mem_biases[layer], in_width, out_width, res);
+					else
+						convolutionHigh(command_queue, kernel_conv_high, &mem_buffer, &mem_fmaps[layer], &mem_weights[layer], &mem_biases[layer], in_width, out_width, res);
 				}
 			}
 			else
