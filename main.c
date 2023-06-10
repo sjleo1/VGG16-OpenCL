@@ -6,7 +6,7 @@ extern result* sequential(const images*, const model*);
 extern result* parallel(const images*, const model*);
 
 void runInference() {
-	const size_t n = 10;
+	const size_t n = 100;
 
 	images* input = loadImages(n);
 	model* network = loadNetwork();
