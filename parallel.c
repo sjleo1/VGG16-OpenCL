@@ -21,7 +21,7 @@ static inline float ReLU(float val) {
 	else			return	0.0;
 }
 
-static void convolution(
+static inline void convolution(
 	cl_command_queue command_queue,
 	cl_kernel kernel,
 	cl_mem* input,
@@ -191,9 +191,11 @@ result* parallel(const images* images, const model* network) {
 	cl_mem* mem_results = (cl_mem*)malloc_c(sizeof(cl_mem) * images->count);
 
 	printf("Operation started on the OpenCL device. Please wait...\n");
+
+	// Stopwatch starts here.
 	output->start_time = clock();
+
 	// Create memory objects and write data to memory them
-	// printf("Copying data to memory objects...\n");
 	for (int i = 0; i < 21; ++i) {
 		// Create memory objects for feature maps
 		size_t fmap_size = sizeof(float) * RES[i] * RES[i] * WIDTHS[i][1];
@@ -233,11 +235,9 @@ result* parallel(const images* images, const model* network) {
 	}
 	
 	const size_t image_size = sizeof(float) * 32 * 32 * 3;
-	// printf("Running image inference on the OpenCL devices...\n");
 	for (unsigned int i = 0; i < images->count; ++i) {
-		// printf("[%u/%zd]", i + 1, images->count);
 		mem_images[i] = clCreateBuffer(context, CL_MEM_READ_ONLY, image_size, NULL, &err_num);
-		//err_num |= clEnqueueWriteBuffer(command_queue, mem_images[i], CL_FALSE, 0, image_size, images->at[i], 0, NULL, NULL);
+		err_num |= clEnqueueWriteBuffer(command_queue, mem_images[i], CL_FALSE, 0, image_size, images->at[i], 0, NULL, NULL);
 		CHECK_ERROR(err_num);
 
 		const float* buffer = images->at[i];
@@ -254,26 +254,18 @@ result* parallel(const images* images, const model* network) {
 					const size_t in_size = sizeof(float) * res * res * 4 * in_width;
 					const size_t out_size = sizeof(float) * res * res * out_width;
 
-					err_num = clEnqueueWriteBuffer(command_queue, mem_buffer, CL_TRUE, 0, in_size, buffer, 0, NULL, NULL);
-					CHECK_ERROR(err_num);
-
 					maxp(command_queue, kernel_maxp, &mem_buffer, &mem_fmaps[layer], out_width, res);
 
-					err_num = clEnqueueReadBuffer(command_queue, mem_fmaps[layer], CL_TRUE, 0, out_size, fmaps[layer], 0, NULL, NULL);
-					CHECK_ERROR(err_num);
+					if (layer == 17) {
+						err_num = clEnqueueReadBuffer(command_queue, mem_fmaps[layer], CL_TRUE, 0, out_size, fmaps[layer], 0, NULL, NULL);
+						CHECK_ERROR(err_num);
+					}
 				}
 				else {
-					// convolution(buffer, fmaps[layer], weight, bias, in_width, out_width, res);
 					const size_t in_size = sizeof(float) * res * res * in_width;
 					const size_t out_size = sizeof(float) * res * res * out_width;
-					
-					err_num = clEnqueueWriteBuffer(command_queue, mem_buffer, CL_TRUE, 0, in_size, buffer, 0, NULL, NULL);
-					CHECK_ERROR(err_num);
 
 					convolution(command_queue, kernel_conv, &mem_buffer, &mem_fmaps[layer], &mem_weights[layer], &mem_biases[layer], in_width, out_width, res);
-
-					err_num = clEnqueueReadBuffer(command_queue, mem_fmaps[layer], CL_TRUE, 0, out_size, fmaps[layer], 0, NULL, NULL);
-					CHECK_ERROR(err_num);
 				}
 			}
 			else
@@ -287,8 +279,8 @@ result* parallel(const images* images, const model* network) {
 
 		output->labels[i] = argmax(fmaps[20], 10);
 		output->confs[i] = fmaps[20][output->labels[i]];
-		// printf("\r");
 	}
+	// Stopwatch stops here.
 	output->end_time = clock();
 	printf("Done.        \n");
 
