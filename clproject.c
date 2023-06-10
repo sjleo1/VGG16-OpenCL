@@ -237,7 +237,7 @@ cl_device_id* selectPlatformAndDevices(cl_platform_id* platform, cl_uint* num_de
 		scanf("%i", device_nums + i);
 
 		// Validate each device number
-		if (!(device_nums[i] < *num_devices)) {
+		if (total_num_devices <= device_nums[i]) {
 			printf("Invalid device number. Maximum device number possible is %i", total_num_devices - 1);
 			exit(1);
 		}
