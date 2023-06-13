@@ -67,5 +67,8 @@
     <None Include="memset.cl">
       <Filter>OpenCL Kernel Files</Filter>
     </None>
+    <None Include="fc.cl">
+      <Filter>OpenCL Kernel Files</Filter>
+    </None>
   </ItemGroup>
 </Project>
