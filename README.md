@@ -7,6 +7,8 @@ __This project is an implementation of the VGG16 model pre-trained on the [`CIFA
 
 [`VGG16`](https://arxiv.org/abs/1409.1556) was proposed in the paper [*Very Deep Convolutional Networks for Large-Scale Image Recognition*](https://arxiv.org/abs/1409.1556) by K. Simonyan and A. Zisserman and designed to work on 224 $\times$ 224 pixel input images. However, the model in this project has been adapted for `CIFAR 10` dataset, which includes 32 $\times$ 32 pixel images.
 
+__The goal of this project is to optimize the model to *`reduce inference time`* using OpenCL as much as possible.__
+
 The model is a pre-trained and inference-only module, meaning you don't have to train it yourself.
 
 
