@@ -7,11 +7,14 @@
 #include "customlib.h"
 #include "clproject.h"
 
-const size_t num_kernel_files = 3;
+#define BATCH 1
+
+const size_t num_kernel_files = 4;
 const char* kernel_files[] = {
 	"maxp.cl",
 	"conv.cl",
-	"memset.cl"
+	"memset.cl",
+	"fc.cl"
 };
 
 static inline float ReLU(float val) {
@@ -19,7 +22,8 @@ static inline float ReLU(float val) {
 	else			return	0.0;
 }
 
-static size_t operation_per_item;
+static size_t opt_work_group_length;
+static size_t work_per_thread;
 static void setOptimalWorkGroupSize(cl_device_id device) {
 	cl_int err_num;
 
@@ -27,12 +31,18 @@ static void setOptimalWorkGroupSize(cl_device_id device) {
 	err_num = clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(size_t), &max_work_group_size, NULL);
 	CHECK_ERROR(err_num);
 
-	if (max_work_group_size > 512)
-		operation_per_item = 1;
-	else if (max_work_group_size > 128)
-		operation_per_item = 2;
-	else
-		operation_per_item = 4;
+	if (max_work_group_size >= 1024) {
+		opt_work_group_length = 32;
+		work_per_thread = 1;
+	}
+	else if (max_work_group_size >= 256) {
+		opt_work_group_length = 16;
+		work_per_thread = 2;
+	}
+	else {
+		opt_work_group_length = 8;
+		work_per_thread = 4;
+	}
 }
 
 static inline void convolutionLow(
@@ -48,8 +58,8 @@ static inline void convolutionLow(
 {
 	cl_int err_num;
 	cl_uint work_dim = 3;
-	const size_t global_work_size[3] = { resolution / operation_per_item, resolution / operation_per_item, out_width };
-	const size_t local_work_size[3] = { resolution / operation_per_item, resolution / operation_per_item, 1 };
+	const size_t global_work_size[3] = { resolution / work_per_thread, resolution / work_per_thread, out_width };
+	const size_t local_work_size[3] = { resolution / work_per_thread, resolution / work_per_thread, 1 };
 
 	err_num = clSetKernelArg(kernel, 0, sizeof(cl_mem), input);
 	err_num |= clSetKernelArg(kernel, 1, sizeof(cl_mem), output);
@@ -99,7 +109,14 @@ static inline void convolutionHigh(
 	return;
 }
 
-static inline void maxp(cl_command_queue command_queue, cl_kernel kernel, cl_mem* input, cl_mem* output, const size_t width, const size_t out_resolution) {
+static inline void maxp(
+	cl_command_queue command_queue,
+	cl_kernel kernel,
+	cl_mem* input,
+	cl_mem* output,
+	const size_t width,
+	const size_t out_resolution)
+{
 	cl_int err_num;
 	cl_uint work_dim = 3;
 	const size_t global_work_size[3] = { out_resolution, out_resolution, width };
@@ -117,19 +134,34 @@ static inline void maxp(cl_command_queue command_queue, cl_kernel kernel, cl_mem
 	return;
 }
 
-static void fc(
-	const float input[], float output[],
-	const float weight[], const float bias[],
-	const size_t num_innodes, const size_t num_outnodes)
+static inline void fc(
+	cl_command_queue command_queue,
+	cl_kernel kernel,
+	cl_mem* input,
+	cl_mem* output,
+	cl_mem* weight,
+	cl_mem* bias,
+	const size_t num_innodes,
+	const size_t num_outnodes)
 {
-	memset(output, 0, sizeof(float) * num_outnodes);
+	cl_int err_num;
+	cl_uint work_dim = 2;
+	const size_t global_work_size[2] = { num_innodes, num_outnodes };
+	const size_t local_work_size[2] = { num_innodes, 1 };
 
-	float* write_to = output;
-	for (unsigned int out_n = 0; out_n < num_outnodes; ++out_n) {
-		for (unsigned int in_n = 0; in_n < num_innodes; ++in_n)
-			*write_to += input[in_n] * *weight++;
-		*write_to++ = ReLU(*write_to + *bias++);
-	}
+	err_num = clSetKernelArg(kernel, 0, sizeof(cl_mem), input);
+	err_num |= clSetKernelArg(kernel, 1, sizeof(cl_mem), output);
+	err_num |= clSetKernelArg(kernel, 2, sizeof(cl_mem), weight);
+	err_num |= clSetKernelArg(kernel, 3, sizeof(cl_mem), bias);
+	err_num |= clSetKernelArg(kernel, 4, sizeof(unsigned short), &(unsigned short)num_innodes);
+	err_num |= clSetKernelArg(kernel, 5, sizeof(unsigned short), &(unsigned short)num_outnodes);
+	err_num |= clSetKernelArg(kernel, 6, sizeof(float) * num_innodes, NULL);
+	CHECK_ERROR(err_num);
+
+	err_num = clEnqueueNDRangeKernel(command_queue, kernel, work_dim, NULL, global_work_size, local_work_size, 0, NULL, NULL);
+	CHECK_ERROR(err_num);
+
+	return;
 }
 
 static void softmax(float arr[], const size_t size) {
@@ -194,7 +226,7 @@ static void initCL(
 
 	// Create and build a program
 	char build_option[128];
-	sprintf(build_option, "-cl-fast-relaxed-math -D OPI=%zu", operation_per_item);
+	sprintf(build_option, "-cl-fast-relaxed-math -D WPT=%zu", work_per_thread);
 	*program = buildCLProgram(*context, (cl_uint)num_kernel_files, kernel_files, *num_devices, devices, build_option);
 }
 
@@ -226,6 +258,10 @@ result* parallel(const images* images, const model* network) {
 
 	printf("Creating kernel \'%s\'...\n", "conv_high");
 	cl_kernel kernel_conv_high = clCreateKernel(program, "conv_high", &err_num);
+	CHECK_ERROR(err_num);
+
+	printf("Creating kernel \'%s\'...\n", "fc");
+	cl_kernel kernel_fc = clCreateKernel(program, "fc", &err_num);
 	CHECK_ERROR(err_num);
 
 	// Allocate memory for feature maps (sequential code)
@@ -289,13 +325,14 @@ result* parallel(const images* images, const model* network) {
 		}
 	}
 	
-	const size_t image_size = sizeof(float) * 32 * 32 * 3;
+	const size_t input_size = sizeof(float) * 32 * 32 * 3;
+	const size_t output_size = sizeof(float) * 10;
 	for (unsigned int i = 0; i < images->count; ++i) {
-		mem_images[i] = clCreateBuffer(context, CL_MEM_READ_ONLY, image_size, NULL, &err_num);
-		err_num |= clEnqueueWriteBuffer(command_queue, mem_images[i], CL_FALSE, 0, image_size, images->at[i], 0, NULL, NULL);
+		mem_images[i] = clCreateBuffer(context, CL_MEM_READ_ONLY, input_size, NULL, &err_num);
+		err_num |= clEnqueueWriteBuffer(command_queue, mem_images[i], CL_FALSE, 0, input_size, images->at[i], 0, NULL, NULL);
 		CHECK_ERROR(err_num);
 
-		const float* buffer = images->at[i];
+		float* buffer = images->at[i];
 		cl_mem mem_buffer = mem_images[i];
 		for (unsigned int layer = 0; layer < 21; ++layer) {
 			const float* weight = network->weights[layer];
@@ -306,37 +343,30 @@ result* parallel(const images* images, const model* network) {
 
 			if (layer < 18) {
 				if (layer == 2 || layer == 5 || layer == 9 || layer == 13 || layer == 17) {
-					const size_t in_size = sizeof(float) * res * res * 4 * in_width;
-					const size_t out_size = sizeof(float) * res * res * out_width;
-
 					maxp(command_queue, kernel_maxp, &mem_buffer, &mem_fmaps[layer], out_width, res);
-
-					if (layer == 17) {
-						err_num = clEnqueueReadBuffer(command_queue, mem_fmaps[layer], CL_TRUE, 0, out_size, fmaps[layer], 0, NULL, NULL);
-						CHECK_ERROR(err_num);
-					}
 				}
 				else {
-					const size_t in_size = sizeof(float) * res * res * in_width;
-					const size_t out_size = sizeof(float) * res * res * out_width;
-
 					if (layer < 9)
 						convolutionLow(command_queue, kernel_conv_low, &mem_buffer, &mem_fmaps[layer], &mem_weights[layer], &mem_biases[layer], in_width, out_width, res);
 					else
 						convolutionHigh(command_queue, kernel_conv_high, &mem_buffer, &mem_fmaps[layer], &mem_weights[layer], &mem_biases[layer], in_width, out_width, res);
 				}
 			}
-			else
-				fc(buffer, fmaps[layer], weight, bias, in_width, out_width);
+			else {
+				fc(command_queue, kernel_fc, &mem_buffer, &mem_fmaps[layer], &mem_weights[layer], &mem_biases[layer], in_width, out_width);
+			}
 
 			buffer = fmaps[layer];
 			mem_buffer = mem_fmaps[layer];
 		}
 
-		softmax(fmaps[20], 10);
+		err_num = clEnqueueReadBuffer(command_queue, mem_buffer, CL_TRUE, 0, output_size, buffer, 0, NULL, NULL);
+		CHECK_ERROR(err_num);
 
-		output->labels[i] = argmax(fmaps[20], 10);
-		output->confs[i] = fmaps[20][output->labels[i]];
+		softmax(buffer, 10);
+
+		output->labels[i] = argmax(buffer, 10);
+		output->confs[i] = buffer[output->labels[i]];
 	}
 	// Stopwatch stops here.
 	output->end_time = clock();
