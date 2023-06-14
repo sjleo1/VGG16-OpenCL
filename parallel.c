@@ -223,6 +223,21 @@ static void initCL(
 	*program = buildCLProgram(*context, (cl_uint)num_kernel_files, kernel_files, *num_devices, devices, build_option);
 }
 
+static void termCL(
+	cl_context* context,
+	cl_command_queue* command_queue,
+	cl_program* program)
+{
+	cl_int err_num;
+
+	err_num = clReleaseProgram(*program);
+	err_num |= clReleaseCommandQueue(*command_queue);
+	err_num |= clReleaseContext(*context);
+	CHECK_ERROR(err_num);
+
+	return;
+}
+
 result* parallel(const images* images, const model* network) {
 	cl_int err_num;
 
@@ -374,6 +389,40 @@ result* parallel(const images* images, const model* network) {
 	// Stopwatch stops here.
 	output->end_time = clock();
 	printf("Done.        \n");
+
+	for (int i = 0; i < 21; ++i) {
+		err_num |= clReleaseMemObject(mem_fmaps[i]);
+
+		if (i == 2 || i == 5 || i == 9 || i == 13 || i == 17) continue;
+
+		err_num |= clReleaseMemObject(mem_weights[i]);
+		err_num |= clReleaseMemObject(mem_biases[i]);
+	}
+	CHECK_ERROR(err_num);
+
+	for (int i = 0; i < images->count; ++i) {
+		err_num |= clReleaseEvent(event_rlabels[i]);
+		err_num |= clReleaseEvent(event_rconfs[i]);
+	}
+	CHECK_ERROR(err_num);
+
+	free_c(mem_images);
+	free_c(mem_fmaps);
+	free_c(mem_weights);
+	free_c(mem_biases);
+	free_c(mem_labels);
+	free_c(mem_confs);
+	free_c(event_rlabels);
+	free_c(event_rconfs);
+
+	err_num = clReleaseKernel(kernel_maxp);
+	err_num |= clReleaseKernel(kernel_conv_low);
+	err_num |= clReleaseKernel(kernel_conv_high);
+	err_num |= clReleaseKernel(kernel_fc);
+	err_num |= clReleaseKernel(kernel_argmax);
+	CHECK_ERROR(err_num);
+
+	termCL(&context, &command_queue, &program);
 
 	return output;
 }
