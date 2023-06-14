@@ -147,7 +147,6 @@
     <None Include="fc.cl" />
     <None Include="images.bin" />
     <None Include="labels.bin" />
-    <None Include="memset.cl" />
     <None Include="network.bin" />
     <None Include="maxp.cl" />
   </ItemGroup>

@@ -24,13 +24,13 @@
     <ClCompile Include="customlib.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="clproject.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="cnn.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="parallel.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="clproject.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -62,9 +62,6 @@
       <Filter>OpenCL Kernel Files</Filter>
     </None>
     <None Include="conv.cl">
-      <Filter>OpenCL Kernel Files</Filter>
-    </None>
-    <None Include="memset.cl">
       <Filter>OpenCL Kernel Files</Filter>
     </None>
     <None Include="fc.cl">

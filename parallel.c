@@ -8,12 +8,16 @@
 #include "clproject.h"
 
 #define BATCH 1
+#define NUM_PIXELS (32 * 32 * 3)
+#define NUM_CLASSES 10
 
-const size_t num_kernel_files = 4;
+static size_t max_work_group_size;
+static size_t work_per_thread;
+static const size_t num_kernel_files = 3;
+
 const char* kernel_files[] = {
 	"maxp.cl",
 	"conv.cl",
-	"memset.cl",
 	"fc.cl"
 };
 
@@ -22,27 +26,18 @@ static inline float ReLU(float val) {
 	else			return	0.0;
 }
 
-static size_t opt_work_group_length;
-static size_t work_per_thread;
-static void setOptimalWorkGroupSize(cl_device_id device) {
+static void setWPT(cl_device_id device) {
 	cl_int err_num;
 
-	size_t max_work_group_size;
 	err_num = clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(size_t), &max_work_group_size, NULL);
 	CHECK_ERROR(err_num);
 
-	if (max_work_group_size >= 1024) {
-		opt_work_group_length = 32;
+	if (max_work_group_size >= 1024)
 		work_per_thread = 1;
-	}
-	else if (max_work_group_size >= 256) {
-		opt_work_group_length = 16;
+	else if (max_work_group_size >= 256)
 		work_per_thread = 2;
-	}
-	else {
-		opt_work_group_length = 8;
+	else
 		work_per_thread = 4;
-	}
 }
 
 static inline void convolutionLow(
@@ -222,7 +217,7 @@ static void initCL(
 	CHECK_ERROR(err_num);
 
 	// Set optimal work group size
-	setOptimalWorkGroupSize(*devices);
+	setWPT(*devices);
 
 	// Create and build a program
 	char build_option[128];
@@ -325,8 +320,8 @@ result* parallel(const images* images, const model* network) {
 		}
 	}
 	
-	const size_t input_size = sizeof(float) * 32 * 32 * 3;
-	const size_t output_size = sizeof(float) * 10;
+	const size_t input_size = sizeof(float) * NUM_PIXELS;
+	const size_t output_size = sizeof(float) * NUM_CLASSES;
 	for (unsigned int i = 0; i < images->count; ++i) {
 		mem_images[i] = clCreateBuffer(context, CL_MEM_READ_ONLY, input_size, NULL, &err_num);
 		err_num |= clEnqueueWriteBuffer(command_queue, mem_images[i], CL_FALSE, 0, input_size, images->at[i], 0, NULL, NULL);
