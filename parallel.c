@@ -8,13 +8,18 @@
 #include "clproject.h"
 
 #define BATCH 1
+#define NUM_PIXELS (32 * 32 * 3)
+#define NUM_CLASSES 10
 
-const size_t num_kernel_files = 4;
+static size_t max_work_group_size;
+static size_t work_per_thread;
+static const size_t num_kernel_files = 4;
+
 const char* kernel_files[] = {
-	"maxp.cl",
 	"conv.cl",
-	"memset.cl",
-	"fc.cl"
+	"maxp.cl",
+	"fc.cl",
+	"argmax.cl"
 };
 
 static inline float ReLU(float val) {
@@ -22,27 +27,18 @@ static inline float ReLU(float val) {
 	else			return	0.0;
 }
 
-static size_t opt_work_group_length;
-static size_t work_per_thread;
-static void setOptimalWorkGroupSize(cl_device_id device) {
+static void setWPT(cl_device_id device) {
 	cl_int err_num;
 
-	size_t max_work_group_size;
 	err_num = clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(size_t), &max_work_group_size, NULL);
 	CHECK_ERROR(err_num);
 
-	if (max_work_group_size >= 1024) {
-		opt_work_group_length = 32;
+	if (max_work_group_size >= 1024)
 		work_per_thread = 1;
-	}
-	else if (max_work_group_size >= 256) {
-		opt_work_group_length = 16;
+	else if (max_work_group_size >= 256)
 		work_per_thread = 2;
-	}
-	else {
-		opt_work_group_length = 8;
+	else
 		work_per_thread = 4;
-	}
 }
 
 static inline void convolutionLow(
@@ -146,8 +142,8 @@ static inline void fc(
 {
 	cl_int err_num;
 	cl_uint work_dim = 2;
-	const size_t global_work_size[2] = { num_innodes, num_outnodes };
-	const size_t local_work_size[2] = { num_innodes, 1 };
+	const size_t global_work_size[2] = { num_innodes / work_per_thread, num_outnodes };
+	const size_t local_work_size[2] = { num_innodes / work_per_thread, 1 };
 
 	err_num = clSetKernelArg(kernel, 0, sizeof(cl_mem), input);
 	err_num |= clSetKernelArg(kernel, 1, sizeof(cl_mem), output);
@@ -164,32 +160,29 @@ static inline void fc(
 	return;
 }
 
-static void softmax(float arr[], const size_t size) {
-	float max = arr[0];
-	for (unsigned int i = 1; i < size; ++i)
-		if (max < arr[i])
-			max = arr[i];
+// Softmax is internally calculated in argmax kernel
+static inline void argmax(
+	cl_command_queue command_queue,
+	cl_kernel kernel,
+	cl_mem* input,
+	cl_mem* label,
+	cl_mem* confidence,
+	const size_t input_size)
+{
+	cl_int err_num;
+	cl_uint work_dim = 1;
+	const size_t global_work_size[1] = { 1 };
+	const size_t local_work_size[1] = { 1 };
 
-	float sum = 0.0;
-	for (unsigned int i = 0; i < size; ++i) {
-		arr[i] = (float)exp(arr[i] - max);
-		sum += arr[i];
-	}
+	err_num = clSetKernelArg(kernel, 0, sizeof(cl_mem), input);
+	err_num |= clSetKernelArg(kernel, 1, sizeof(cl_mem), label);
+	err_num |= clSetKernelArg(kernel, 2, sizeof(cl_mem), confidence);
+	CHECK_ERROR(err_num);
 
-	for (unsigned int i = 0; i < size; ++i)
-		arr[i] /= sum + (float)1e-7;
-}
+	err_num = clEnqueueNDRangeKernel(command_queue, kernel, work_dim, NULL, global_work_size, local_work_size, 0, NULL, NULL);
+	CHECK_ERROR(err_num);
 
-static int argmax(float arr[], size_t size) {
-	unsigned int index = 0;
-	float max = arr[index];
-	for (unsigned int i = 1; i < size; ++i)
-		if (max < arr[i]) {
-			max = arr[i];
-			index = i;
-		}
-
-	return (int)index;
+	return;
 }
 
 static void initCL(
@@ -222,12 +215,27 @@ static void initCL(
 	CHECK_ERROR(err_num);
 
 	// Set optimal work group size
-	setOptimalWorkGroupSize(*devices);
+	setWPT(*devices);
 
 	// Create and build a program
 	char build_option[128];
-	sprintf(build_option, "-cl-fast-relaxed-math -D WPT=%zu", work_per_thread);
+	sprintf(build_option, "-cl-fast-relaxed-math -D WPT=%zu -D NUM_CLASSES=%d", work_per_thread, NUM_CLASSES);
 	*program = buildCLProgram(*context, (cl_uint)num_kernel_files, kernel_files, *num_devices, devices, build_option);
+}
+
+static void termCL(
+	cl_context* context,
+	cl_command_queue* command_queue,
+	cl_program* program)
+{
+	cl_int err_num;
+
+	err_num = clReleaseProgram(*program);
+	err_num |= clReleaseCommandQueue(*command_queue);
+	err_num |= clReleaseContext(*context);
+	CHECK_ERROR(err_num);
+
+	return;
 }
 
 result* parallel(const images* images, const model* network) {
@@ -264,11 +272,9 @@ result* parallel(const images* images, const model* network) {
 	cl_kernel kernel_fc = clCreateKernel(program, "fc", &err_num);
 	CHECK_ERROR(err_num);
 
-	// Allocate memory for feature maps (sequential code)
-	printf("Allocating temporary memory for feature maps... (Host)\n");
-	float* fmaps[21];
-	for (int i = 0; i < 21; ++i)
-		fmaps[i] = (float*)malloc_c(sizeof(float) * RES[i] * RES[i] * WIDTHS[i][1]);
+	printf("Creating kernel \'%s\'...\n", "argmax");
+	cl_kernel kernel_argmax = clCreateKernel(program, "argmax", &err_num);
+	CHECK_ERROR(err_num);
 
 	// Declare memory objects for (OpenCL)
 	// input images
@@ -278,15 +284,16 @@ result* parallel(const images* images, const model* network) {
 	// weights and biases
 	cl_mem* mem_weights = (cl_mem*)malloc_c(sizeof(cl_mem) * 21);
 	cl_mem* mem_biases = (cl_mem*)malloc_c(sizeof(cl_mem) * 21);
-	// output of last fc layer
-	cl_mem* mem_results = (cl_mem*)malloc_c(sizeof(cl_mem) * images->count);
+	// output from argmax
+	cl_mem* mem_labels = (cl_mem*)malloc_c(sizeof(cl_mem) * images->count);
+	cl_mem* mem_confs = (cl_mem*)malloc_c(sizeof(cl_mem) * images->count);
 
-	printf("Operation started on the OpenCL device. Please wait...\n");
-
-	// Stopwatch starts here.
-	output->start_time = clock();
+	// Create OpenCL event to wait for buffer reading
+	cl_event* event_rlabels = (cl_event*)malloc_c(sizeof(cl_event) * images->count);
+	cl_event* event_rconfs = (cl_event*)malloc_c(sizeof(cl_event) * images->count);
 
 	// Create memory objects and write data to memory them
+	printf("Loading the model...\n");
 	for (int i = 0; i < 21; ++i) {
 		// Create memory objects for feature maps
 		size_t fmap_size = sizeof(float) * RES[i] * RES[i] * WIDTHS[i][1];
@@ -325,14 +332,17 @@ result* parallel(const images* images, const model* network) {
 		}
 	}
 	
-	const size_t input_size = sizeof(float) * 32 * 32 * 3;
-	const size_t output_size = sizeof(float) * 10;
+	printf("Operation started on the OpenCL device. Please wait...\n");
+	// Stopwatch starts here.
+	output->start_time = clock();
+
+	const size_t input_size = sizeof(float) * NUM_PIXELS;
+	const size_t output_size = sizeof(float) * NUM_CLASSES;
 	for (unsigned int i = 0; i < images->count; ++i) {
 		mem_images[i] = clCreateBuffer(context, CL_MEM_READ_ONLY, input_size, NULL, &err_num);
 		err_num |= clEnqueueWriteBuffer(command_queue, mem_images[i], CL_FALSE, 0, input_size, images->at[i], 0, NULL, NULL);
 		CHECK_ERROR(err_num);
 
-		float* buffer = images->at[i];
 		cl_mem mem_buffer = mem_images[i];
 		for (unsigned int layer = 0; layer < 21; ++layer) {
 			const float* weight = network->weights[layer];
@@ -356,24 +366,63 @@ result* parallel(const images* images, const model* network) {
 				fc(command_queue, kernel_fc, &mem_buffer, &mem_fmaps[layer], &mem_weights[layer], &mem_biases[layer], in_width, out_width);
 			}
 
-			buffer = fmaps[layer];
 			mem_buffer = mem_fmaps[layer];
 		}
 
-		err_num = clEnqueueReadBuffer(command_queue, mem_buffer, CL_TRUE, 0, output_size, buffer, 0, NULL, NULL);
+		mem_labels[i] = clCreateBuffer(context, CL_MEM_WRITE_ONLY, sizeof(int), NULL, &err_num);
 		CHECK_ERROR(err_num);
 
-		softmax(buffer, 10);
+		mem_confs[i] = clCreateBuffer(context, CL_MEM_WRITE_ONLY, sizeof(float), NULL, &err_num);
+		CHECK_ERROR(err_num);
 
-		output->labels[i] = argmax(buffer, 10);
-		output->confs[i] = buffer[output->labels[i]];
+		argmax(command_queue, kernel_argmax, &mem_buffer, &mem_labels[i], &mem_confs[i], NUM_CLASSES);
+
+		err_num = clEnqueueReadBuffer(command_queue, mem_labels[i], CL_FALSE, 0, sizeof(int), &output->labels[i], 0, NULL, &event_rlabels[i]);
+		err_num |= clEnqueueReadBuffer(command_queue, mem_confs[i], CL_FALSE, 0, sizeof(float), &output->confs[i], 0, NULL, &event_rconfs[i]);
+		CHECK_ERROR(err_num);
 	}
+
+	err_num = clEnqueueWaitForEvents(command_queue, (cl_uint)images->count, event_rlabels);
+	err_num |= clEnqueueWaitForEvents(command_queue, (cl_uint)images->count, event_rconfs);
+	CHECK_ERROR(err_num);
+
 	// Stopwatch stops here.
 	output->end_time = clock();
 	printf("Done.        \n");
 
-	for (int i = 0; i < 21; ++i)
-		free_c(fmaps[i]);
+	for (int i = 0; i < 21; ++i) {
+		err_num |= clReleaseMemObject(mem_fmaps[i]);
+
+		if (i == 2 || i == 5 || i == 9 || i == 13 || i == 17) continue;
+
+		err_num |= clReleaseMemObject(mem_weights[i]);
+		err_num |= clReleaseMemObject(mem_biases[i]);
+	}
+	CHECK_ERROR(err_num);
+
+	for (int i = 0; i < images->count; ++i) {
+		err_num |= clReleaseEvent(event_rlabels[i]);
+		err_num |= clReleaseEvent(event_rconfs[i]);
+	}
+	CHECK_ERROR(err_num);
+
+	free_c(mem_images);
+	free_c(mem_fmaps);
+	free_c(mem_weights);
+	free_c(mem_biases);
+	free_c(mem_labels);
+	free_c(mem_confs);
+	free_c(event_rlabels);
+	free_c(event_rconfs);
+
+	err_num = clReleaseKernel(kernel_maxp);
+	err_num |= clReleaseKernel(kernel_conv_low);
+	err_num |= clReleaseKernel(kernel_conv_high);
+	err_num |= clReleaseKernel(kernel_fc);
+	err_num |= clReleaseKernel(kernel_argmax);
+	CHECK_ERROR(err_num);
+
+	termCL(&context, &command_queue, &program);
 
 	return output;
 }

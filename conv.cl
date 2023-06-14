@@ -1,6 +1,8 @@
 #define out_z get_global_id(2)
-#define out_y get_global_id(1)
-#define out_x get_global_id(0)
+#define out_y_low (get_global_id(1) * WPT)
+#define out_x_low (get_global_id(0) * WPT)
+#define out_y_high get_global_id(1)
+#define out_x_high get_global_id(0)
 
 __kernel void conv_low(
 	const __global float *__private input,
@@ -15,15 +17,15 @@ __kernel void conv_low(
 	__private float output_buffers[WPT * WPT] = { 0.0f };
 	__private float filter[9];
 
-	output += out_z * (res * res) + out_y * res + out_x;
+	output += out_z * (res * res) + out_y_low * res + out_x_low;
 	weight += out_z * in_width * 9;
 	bias += out_z;
 
 	for (unsigned short in_chan = 0; in_chan < in_width; ++in_chan) {
 		for (unsigned char dy = 0; dy < WPT; ++dy)
 			for (unsigned char dx = 0; dx < WPT; ++dx)
-				input_buffer[(out_y + dy) * res + out_x + dx] = \
-					input[(out_y + dy) * res + out_x + dx];
+				input_buffer[(out_y_low + dy) * res + out_x_low + dx] = \
+					input[(out_y_low + dy) * res + out_x_low + dx];
 		for (unsigned char w = 0; w < 9; ++w)
 			filter[w] = weight[w];
 
@@ -33,8 +35,8 @@ __kernel void conv_low(
 			for (unsigned char dx = 0; dx < WPT; ++dx) {
 				for (unsigned char filter_y = 0; filter_y < 3; ++filter_y) {
 					for (unsigned char filter_x = 0; filter_x < 3; ++filter_x) {
-						unsigned char in_y = out_y + dy + filter_y - 1;
-						unsigned char in_x = out_x + dx + filter_x - 1;
+						unsigned char in_y = out_y_low + dy + filter_y - 1;
+						unsigned char in_x = out_x_low + dx + filter_x - 1;
 
 						if (in_y >= 0 && in_y < res && in_x >= 0 && in_x < res)
 							output_buffers[dy * WPT + dx] += \
@@ -77,7 +79,7 @@ __kernel void conv_high(
 	__private float output_buffer = 0.0f;
 	__private float filter[9];
 
-	output += out_z * (res * res) + out_y * res + out_x;
+	output += out_z * (res * res) + out_y_high * res + out_x_high;
 	weight += out_z * in_width * 9;
 	bias += out_z;
 
@@ -91,8 +93,8 @@ __kernel void conv_high(
 
 		for (unsigned char filter_y = 0; filter_y < 3; ++filter_y) {
 			for (unsigned char filter_x = 0; filter_x < 3; ++filter_x) {
-				unsigned char in_y = out_y + filter_y - 1;
-				unsigned char in_x = out_x + filter_x - 1;
+				unsigned char in_y = out_y_high + filter_y - 1;
+				unsigned char in_x = out_x_high + filter_x - 1;
 
 				if (in_y >= 0 && in_y < res && in_x >= 0 && in_x < res)
 					output_buffer += \
