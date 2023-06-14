@@ -67,5 +67,8 @@
     <None Include="fc.cl">
       <Filter>OpenCL Kernel Files</Filter>
     </None>
+    <None Include="argmax.cl">
+      <Filter>OpenCL Kernel Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

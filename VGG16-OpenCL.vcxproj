@@ -143,6 +143,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="answer.bin" />
+    <None Include="argmax.cl" />
     <None Include="conv.cl" />
     <None Include="fc.cl" />
     <None Include="images.bin" />
