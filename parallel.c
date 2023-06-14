@@ -292,12 +292,8 @@ result* parallel(const images* images, const model* network) {
 	cl_event* event_rlabels = (cl_event*)malloc_c(sizeof(cl_event) * images->count);
 	cl_event* event_rconfs = (cl_event*)malloc_c(sizeof(cl_event) * images->count);
 
-	printf("Operation started on the OpenCL device. Please wait...\n");
-
-	// Stopwatch starts here.
-	output->start_time = clock();
-
 	// Create memory objects and write data to memory them
+	printf("Loading the model...\n");
 	for (int i = 0; i < 21; ++i) {
 		// Create memory objects for feature maps
 		size_t fmap_size = sizeof(float) * RES[i] * RES[i] * WIDTHS[i][1];
@@ -336,6 +332,10 @@ result* parallel(const images* images, const model* network) {
 		}
 	}
 	
+	printf("Operation started on the OpenCL device. Please wait...\n");
+	// Stopwatch starts here.
+	output->start_time = clock();
+
 	const size_t input_size = sizeof(float) * NUM_PIXELS;
 	const size_t output_size = sizeof(float) * NUM_CLASSES;
 	for (unsigned int i = 0; i < images->count; ++i) {
