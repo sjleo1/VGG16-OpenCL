@@ -141,8 +141,8 @@ static inline void fc(
 {
 	cl_int err_num;
 	cl_uint work_dim = 2;
-	const size_t global_work_size[2] = { num_innodes, num_outnodes };
-	const size_t local_work_size[2] = { num_innodes, 1 };
+	const size_t global_work_size[2] = { num_innodes / work_per_thread, num_outnodes };
+	const size_t local_work_size[2] = { num_innodes / work_per_thread, 1 };
 
 	err_num = clSetKernelArg(kernel, 0, sizeof(cl_mem), input);
 	err_num |= clSetKernelArg(kernel, 1, sizeof(cl_mem), output);
