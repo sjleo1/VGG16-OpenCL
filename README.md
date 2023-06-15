@@ -62,24 +62,37 @@ The VGG16 model gained its reputation from the use of small 3 $\times$ 3 convolu
    > TODO
 
 
-## Results
+## Performance Result
 
-### Sequential Code
+The test was performed on three different computers.
 
-| Processor | Memory | Elapsed Time (500 images) | Elapsed Time per Image (500 images) |
-|:-:|:-:|:-:|:-:|
-| `Intel i5-1240P` | 16 GB LPDDR5 | 467.427 seconds | 0.9349 seconds |
-| `Intel i5-10400` | 32 GB DDR4 | 613.509 seconds | 1.2270 seconds |
-| `Intel m3-6Y30` | 4 GB LPDDR3 | 1345.945 seconds | 2.6919 seconds |
+* #### ***Computer 1** (Assembled PC)*
 
-### Parallel Code
+   | Run Type | Processor | Host Memory | Dedicated Memory | Elapsed Time | ET/Image |
+   |:-:|:-:|:-:|:-:|:-:|:-:|
+   | **Sequential** | `Intel i5-10400` | 32 GB DDR4  | - | 614 s (500 images) | 1.2270 seconds |
+   | **OpenCL** | `Intel UHD Graphics 630` | DDR4 | No Dedicated Memory | 471 s (10000) | 0.0479 s |
+   | **OpenCL** | `NVIDIA RTX 3060` | DDR4 | 12 GB GDDR6 | 29.1 s (10000) | 0.0029 s |
+   |||||||
+   | ***Performance Improvement*** ||||| $\times$ ***423*** |
 
-| Processor | Dedicated Memory | Elapsed Time | Elapsed Time per Image |
-|:-:|:-:|:-:|:-:|
-| `Nvidia RTX 3060` | 12 GB GDDR6 | ? seconds | ? seconds |
-| `Intel Iris Xe Graphics (80EU)` | No | ? seconds | ? seconds |
-| `Intel UHD Graphics 630` | No | ? seconds | ? seconds |
-| `Intel HD Graphics 515` | No | ? seconds | ? seconds |
+* #### ***Computer 2** (Laptop)*
+
+   | Run Type | Processor | Host Memory | Dedicated Memory | Elapsed Time | ET/Image |
+   |:-:|:-:|:-:|:-:|:-:|:-:|
+   | **Sequential** | `Intel i5-1240P` | 16 GB LPDDR5 | - | 467 s (500) | 0.9349 s |
+   | **OpenCL** | `Intel Iris Xe Graphics` (80EU) | LPDDR5 | No Dedicated Memory | s | s |
+   |||||||
+   | ***Performance Improvement*** ||||| $\times$ ***?*** |
+
+* #### ***Computer 3** (Tablet)*
+
+   | Run Type | Processor | Host Memory | Dedicated Memory | Elapsed Time | ET/Image |
+   |:-:|:-:|:-:|:-:|:-:|:-:|
+   | **Sequential** | `Intel m3-6Y30` | 4 GB LPDDR3  | - | 1345 s (500) | 2.6919 s |
+   | **OpenCL** | `Intel HD Graphics 515` | LPDDR3 | No Dedicated Memory | s | s |
+   |||||||
+   | ***Performance Improvement*** ||||| $\times$ ***?*** |
 
 
 ## License
