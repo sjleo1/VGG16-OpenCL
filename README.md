@@ -66,7 +66,7 @@ The VGG16 model gained its reputation from the use of small 3 $\times$ 3 convolu
 
 The test was performed on three different computers.
 
-* #### ***Computer 1** (Assembled PC)*
+* #### ***Computer 1** (Desktop)*
 
    | Run Type | Processor | Host Memory | Dedicated Memory | Elapsed Time | ET/Image |
    |:-:|:-:|:-:|:-:|:-:|:-:|
@@ -81,18 +81,18 @@ The test was performed on three different computers.
    | Run Type | Processor | Host Memory | Dedicated Memory | Elapsed Time | ET/Image |
    |:-:|:-:|:-:|:-:|:-:|:-:|
    | **Sequential** | `Intel i5-1240P` | 16 GB LPDDR5 | - | 467 s (500) | 0.9349 s |
-   | **OpenCL** | `Intel Iris Xe Graphics` (80EU) | LPDDR5 | No Dedicated Memory | s | s |
+   | **OpenCL** | `Intel Iris Xe Graphics` (80EU) | LPDDR5 | No Dedicated Memory | 160 s (10000) | 0.0160 s |
    |||||||
-   | ***Performance Improvement*** ||||| $\times$ ***?*** |
+   | ***Performance Improvement*** ||||| $\times$ ***58*** |
 
 * #### ***Computer 3** (Tablet)*
 
    | Run Type | Processor | Host Memory | Dedicated Memory | Elapsed Time | ET/Image |
    |:-:|:-:|:-:|:-:|:-:|:-:|
    | **Sequential** | `Intel m3-6Y30` | 4 GB LPDDR3  | - | 1345 s (500) | 2.6919 s |
-   | **OpenCL** | `Intel HD Graphics 515` | LPDDR3 | No Dedicated Memory | s | s |
+   | **OpenCL** | `Intel HD Graphics 515` | LPDDR3 | No Dedicated Memory | 774 s (10000) | 0.0774 s |
    |||||||
-   | ***Performance Improvement*** ||||| $\times$ ***?*** |
+   | ***Performance Improvement*** ||||| $\times$ ***35*** |
 
 
 ## License
