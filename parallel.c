@@ -285,12 +285,10 @@ result* parallel(const images* images, const model* network) {
 	cl_mem* mem_weights = (cl_mem*)malloc_c(sizeof(cl_mem) * 21);
 	cl_mem* mem_biases = (cl_mem*)malloc_c(sizeof(cl_mem) * 21);
 	// output from argmax
-	cl_mem* mem_labels = (cl_mem*)malloc_c(sizeof(cl_mem) * images->count);
-	cl_mem* mem_confs = (cl_mem*)malloc_c(sizeof(cl_mem) * images->count);
-
-	// Create OpenCL event to wait for buffer reading
-	cl_event* event_rlabels = (cl_event*)malloc_c(sizeof(cl_event) * images->count);
-	cl_event* event_rconfs = (cl_event*)malloc_c(sizeof(cl_event) * images->count);
+	cl_mem mem_label = clCreateBuffer(context, CL_MEM_WRITE_ONLY, sizeof(int), NULL, &err_num);
+	CHECK_ERROR(err_num);
+	cl_mem mem_conf = clCreateBuffer(context, CL_MEM_WRITE_ONLY, sizeof(float), NULL, &err_num);
+	CHECK_ERROR(err_num);
 
 	// Create memory objects and write data to memory them
 	printf("Loading the model...\n");
@@ -332,9 +330,11 @@ result* parallel(const images* images, const model* network) {
 		}
 	}
 	
-	printf("Operation started on the OpenCL device. Please wait...\n");
+	printf("Operation started on the OpenCL device. Please wait.");
+
 	// Stopwatch starts here.
 	output->start_time = clock();
+	printf(".");
 
 	const size_t input_size = sizeof(float) * NUM_PIXELS;
 	const size_t output_size = sizeof(float) * NUM_CLASSES;
@@ -343,53 +343,52 @@ result* parallel(const images* images, const model* network) {
 		err_num |= clEnqueueWriteBuffer(command_queue, mem_images[i], CL_FALSE, 0, input_size, images->at[i], 0, NULL, NULL);
 		CHECK_ERROR(err_num);
 
-		cl_mem mem_buffer = mem_images[i];
-		for (unsigned int layer = 0; layer < 21; ++layer) {
-			const float* weight = network->weights[layer];
-			const float* bias = network->biases[layer];
-			const size_t in_width = WIDTHS[layer][0];
-			const size_t out_width = WIDTHS[layer][1];
-			const size_t res = RES[layer];
+		convolutionLow(command_queue, kernel_conv_low, &mem_images[i], &mem_fmaps[0], &mem_weights[0], &mem_biases[0], WIDTHS[0][0], WIDTHS[0][1], RES[0]);
+		convolutionLow(command_queue, kernel_conv_low, &mem_fmaps[0], &mem_fmaps[1], &mem_weights[1], &mem_biases[1], WIDTHS[1][0], WIDTHS[1][1], RES[1]);
+		maxp(command_queue, kernel_maxp, &mem_fmaps[1], &mem_fmaps[2], WIDTHS[2][1], RES[2]);
 
-			if (layer < 18) {
-				if (layer == 2 || layer == 5 || layer == 9 || layer == 13 || layer == 17) {
-					maxp(command_queue, kernel_maxp, &mem_buffer, &mem_fmaps[layer], out_width, res);
-				}
-				else {
-					if (layer < 9)
-						convolutionLow(command_queue, kernel_conv_low, &mem_buffer, &mem_fmaps[layer], &mem_weights[layer], &mem_biases[layer], in_width, out_width, res);
-					else
-						convolutionHigh(command_queue, kernel_conv_high, &mem_buffer, &mem_fmaps[layer], &mem_weights[layer], &mem_biases[layer], in_width, out_width, res);
-				}
-			}
-			else {
-				fc(command_queue, kernel_fc, &mem_buffer, &mem_fmaps[layer], &mem_weights[layer], &mem_biases[layer], in_width, out_width);
-			}
+		convolutionLow(command_queue, kernel_conv_low, &mem_fmaps[2], &mem_fmaps[3], &mem_weights[3], &mem_biases[3], WIDTHS[3][0], WIDTHS[3][1], RES[3]);
+		convolutionLow(command_queue, kernel_conv_low, &mem_fmaps[3], &mem_fmaps[4], &mem_weights[4], &mem_biases[4], WIDTHS[4][0], WIDTHS[4][1], RES[4]);
+		maxp(command_queue, kernel_maxp, &mem_fmaps[4], &mem_fmaps[5], WIDTHS[5][1], RES[5]);
 
-			mem_buffer = mem_fmaps[layer];
-		}
+		convolutionLow(command_queue, kernel_conv_low, &mem_fmaps[5], &mem_fmaps[6], &mem_weights[6], &mem_biases[6], WIDTHS[6][0], WIDTHS[6][1], RES[6]);
+		convolutionLow(command_queue, kernel_conv_low, &mem_fmaps[6], &mem_fmaps[7], &mem_weights[7], &mem_biases[7], WIDTHS[7][0], WIDTHS[7][1], RES[7]);
+		convolutionLow(command_queue, kernel_conv_low, &mem_fmaps[7], &mem_fmaps[8], &mem_weights[8], &mem_biases[8], WIDTHS[8][0], WIDTHS[8][1], RES[8]);
+		maxp(command_queue, kernel_maxp, &mem_fmaps[8], &mem_fmaps[9], WIDTHS[9][1], RES[9]);
 
-		mem_labels[i] = clCreateBuffer(context, CL_MEM_WRITE_ONLY, sizeof(int), NULL, &err_num);
-		CHECK_ERROR(err_num);
+		convolutionHigh(command_queue, kernel_conv_high, &mem_fmaps[9], &mem_fmaps[10], &mem_weights[10], &mem_biases[10], WIDTHS[10][0], WIDTHS[10][1], RES[10]);
+		convolutionHigh(command_queue, kernel_conv_high, &mem_fmaps[10], &mem_fmaps[11], &mem_weights[11], &mem_biases[11], WIDTHS[11][0], WIDTHS[11][1], RES[11]);
+		convolutionHigh(command_queue, kernel_conv_high, &mem_fmaps[11], &mem_fmaps[12], &mem_weights[12], &mem_biases[12], WIDTHS[12][0], WIDTHS[12][1], RES[12]);
+		maxp(command_queue, kernel_maxp, &mem_fmaps[12], &mem_fmaps[13], WIDTHS[13][1], RES[13]);
 
-		mem_confs[i] = clCreateBuffer(context, CL_MEM_WRITE_ONLY, sizeof(float), NULL, &err_num);
-		CHECK_ERROR(err_num);
+		convolutionHigh(command_queue, kernel_conv_high, &mem_fmaps[13], &mem_fmaps[14], &mem_weights[14], &mem_biases[14], WIDTHS[14][0], WIDTHS[14][1], RES[14]);
+		convolutionHigh(command_queue, kernel_conv_high, &mem_fmaps[14], &mem_fmaps[15], &mem_weights[15], &mem_biases[15], WIDTHS[15][0], WIDTHS[15][1], RES[15]);
+		convolutionHigh(command_queue, kernel_conv_high, &mem_fmaps[15], &mem_fmaps[16], &mem_weights[16], &mem_biases[16], WIDTHS[16][0], WIDTHS[16][1], RES[16]);
+		maxp(command_queue, kernel_maxp, &mem_fmaps[16], &mem_fmaps[17], WIDTHS[17][1], RES[17]);
 
-		argmax(command_queue, kernel_argmax, &mem_buffer, &mem_labels[i], &mem_confs[i], NUM_CLASSES);
+		fc(command_queue, kernel_fc, &mem_fmaps[17], &mem_fmaps[18], &mem_weights[18], &mem_biases[18], WIDTHS[18][0], WIDTHS[18][1]);
+		fc(command_queue, kernel_fc, &mem_fmaps[18], &mem_fmaps[19], &mem_weights[19], &mem_biases[19], WIDTHS[19][0], WIDTHS[19][1]);
+		fc(command_queue, kernel_fc, &mem_fmaps[19], &mem_fmaps[20], &mem_weights[20], &mem_biases[20], WIDTHS[20][0], WIDTHS[20][1]);
 
-		err_num = clEnqueueReadBuffer(command_queue, mem_labels[i], CL_FALSE, 0, sizeof(int), &output->labels[i], 0, NULL, &event_rlabels[i]);
-		err_num |= clEnqueueReadBuffer(command_queue, mem_confs[i], CL_FALSE, 0, sizeof(float), &output->confs[i], 0, NULL, &event_rconfs[i]);
+		argmax(command_queue, kernel_argmax, &mem_fmaps[20], &mem_label, &mem_conf, NUM_CLASSES);
+
+		err_num = clEnqueueReadBuffer(command_queue, mem_label, CL_FALSE, 0, sizeof(int), &output->labels[i], 0, NULL, NULL);
+		err_num |= clEnqueueReadBuffer(command_queue, mem_conf, CL_FALSE, 0, sizeof(float), &output->confs[i], 0, NULL, NULL);
 		CHECK_ERROR(err_num);
 	}
+	printf(".");
 
-	err_num = clEnqueueWaitForEvents(command_queue, (cl_uint)images->count, event_rlabels);
-	err_num |= clEnqueueWaitForEvents(command_queue, (cl_uint)images->count, event_rconfs);
+	err_num = clFinish(command_queue);
 	CHECK_ERROR(err_num);
+	printf("\n");
 
 	// Stopwatch stops here.
 	output->end_time = clock();
 	printf("Done.        \n");
 
+	// Release memory objects
+	err_num = clReleaseMemObject(mem_label);
+	err_num |= clReleaseMemObject(mem_conf);
 	for (int i = 0; i < 21; ++i) {
 		err_num |= clReleaseMemObject(mem_fmaps[i]);
 
@@ -400,21 +399,13 @@ result* parallel(const images* images, const model* network) {
 	}
 	CHECK_ERROR(err_num);
 
-	for (int i = 0; i < images->count; ++i) {
-		err_num |= clReleaseEvent(event_rlabels[i]);
-		err_num |= clReleaseEvent(event_rconfs[i]);
-	}
-	CHECK_ERROR(err_num);
-
+	// De-allocate memories
 	free_c(mem_images);
 	free_c(mem_fmaps);
 	free_c(mem_weights);
 	free_c(mem_biases);
-	free_c(mem_labels);
-	free_c(mem_confs);
-	free_c(event_rlabels);
-	free_c(event_rconfs);
 
+	// Release kernels
 	err_num = clReleaseKernel(kernel_maxp);
 	err_num |= clReleaseKernel(kernel_conv_low);
 	err_num |= clReleaseKernel(kernel_conv_high);
@@ -422,6 +413,7 @@ result* parallel(const images* images, const model* network) {
 	err_num |= clReleaseKernel(kernel_argmax);
 	CHECK_ERROR(err_num);
 
+	// Release the context, command_queue, and the program
 	termCL(&context, &command_queue, &program);
 
 	return output;
