@@ -1,13 +1,13 @@
 # VGG16-OpenCL
 
 
-__This project is an implementation of the VGG16 model pre-trained on the [`CIFAR 10`](https://www.cs.toronto.edu/~kriz/cifar.html) dataset for inference, written in `C` and `OpenCL C`.__
+__`VGG16-OpenCL` is an implementation of the VGG16 model pre-trained on the [`CIFAR 10`](https://www.cs.toronto.edu/~kriz/cifar.html) dataset for inference, written in `C` and `OpenCL C`.__
 
 [`OpenCL`](https://www.khronos.org/opencl/) is a framework for writing programs that execute across heterogeneous platforms consisting of various processors and hardware accelerators. It provides programming languages and APIs to execute programs on these compute devices.
 
 [`VGG16`](https://arxiv.org/abs/1409.1556) was proposed in the paper [*Very Deep Convolutional Networks for Large-Scale Image Recognition*](https://arxiv.org/abs/1409.1556) by K. Simonyan and A. Zisserman and designed to work on 224 $\times$ 224 pixel input images. However, the model in this project has been adapted for `CIFAR 10` dataset, which includes 32 $\times$ 32 pixel images.
 
-__The goal of this project is to optimize the model to *`reduce inference time`* using OpenCL as much as possible.__
+__The goal of this project is to optimize the model to *reduce inference time* using OpenCL as much as possible.__
 
 The model is a pre-trained and inference-only module, meaning you don't have to train it yourself.
 
@@ -59,40 +59,59 @@ The VGG16 model gained its reputation from the use of small 3 $\times$ 3 convolu
 
 ## Used OpenCL Optimization Techniques
 
-   > TODO
+The single most important thing to consider when optimizing an OpenCL program is reducing global (off-chip) memory accesses as much as possible. Most of the techniques used in this project are variants of reducing memory accesses.
+
+   - [x] **Tiled Convolution & SGEMM**
+   
+      Compared to global memory latency, which is about 400-600 cycles, local memory latency is upto 100 times faster. Considering 3 $\times$ 3 convolution operation, each pixel except those on the edges is read nine times for operation with a single layer of a kernel. Likewise, each element in matrices is read 512 times for 512 $\times$ 512 matrix-multiplication.
+
+      Therefore, *tiling* input data into local memory from global memory prior to actual operations reduces a redundancy of global memory reads and thus improve operation efficiency.
+
+   - [ ] **Tiling to Registers & Multiple Works per Thread**
+
+      Just as tiling data from global to local memory reduced redundant memory reads, more optimization is possible by further tiling from local memory to private memory (register).
+      
+      In the previous technique, it has been assumed that each work-item (thread) works for single output pixel or element in a feature map or matrix. However, each work-item still has to read value from multiple input pixels or elements adjacent to each other.
+
+      For example, in order to do the 3 $\times$ 3 convolution operation, a work-item has to read nine input pixels tiled into local memory. That's equivalent of **9 local memory reads for a single output pixel**. What if we assign multiple output pixels to a work-item (more work per thread), while also tiling necessary input pixels into private memory (tiling to registers)?
+
+      Assuming four pixels are assigned to a work item, single work-item produces 16 local memory reads for four output pixels, leading to **4 local memory reads per output pixel**. ***Roughly speaking***, we can expect it to be twice fast as the previous one.
+
+   - [ ] **Using Vector Datatypes**
+   - [ ] **Hiding Latency**
 
 
 ## Performance Result
 
 The test was performed on three different computers.
 
-* #### ***Computer 1** (Assembled PC)*
+   * **Computer 1** (Desktop)
 
-   | Run Type | Processor | Host Memory | Dedicated Memory | Elapsed Time | ET/Image |
-   |:-:|:-:|:-:|:-:|:-:|:-:|
-   | **Sequential** | `Intel i5-10400` | 32 GB DDR4  | - | 614 s (500 images) | 1.2270 seconds |
-   | **OpenCL** | `Intel UHD Graphics 630` | DDR4 | No Dedicated Memory | 471 s (10000) | 0.0479 s |
-   | **OpenCL** | `NVIDIA RTX 3060` | DDR4 | 12 GB GDDR6 | 29.1 s (10000) | 0.0029 s |
-   |||||||
-   | ***Performance Improvement*** ||||| $\times$ ***423*** |
+      | Run Type | Processor | Host Memory | Dedicated Memory | Elapsed Time | ET/Image |
+      |:-:|:-:|:-:|:-:|:-:|:-:|
+      | **Sequential** | `Intel i5-10400` | 32 GB DDR4  | - | 614 s (500 images) | 1.2270 seconds |
+      | **OpenCL** | `Intel UHD Graphics 630` | DDR4 | No Dedicated Memory | 471 s (10000) | 0.0479 s |
+      | **OpenCL** | `NVIDIA RTX 3060` | DDR4 | 12 GB GDDR6 | 29.1 s (10000) | 0.0029 s |
+      |||||||
+      | ***Performance Improvement*** ||||| $\times$ ***423*** |
 
-* #### ***Computer 2** (Laptop)*
+   * **Computer 2** (Laptop)
 
-   | Run Type | Processor | Host Memory | Dedicated Memory | Elapsed Time | ET/Image |
-   |:-:|:-:|:-:|:-:|:-:|:-:|
-   | **Sequential** | `Intel i5-1240P` | 16 GB LPDDR5 | - | 467 s (500) | 0.9349 s |
-   | **OpenCL** | `Intel Iris Xe Graphics` (80EU) | LPDDR5 | No Dedicated Memory | s | s |
-   |||||||
-   | ***Performance Improvement*** ||||| $\times$ ***?*** |
+      | Run Type | Processor | Host Memory | Dedicated Memory | Elapsed Time | ET/Image |
+      |:-:|:-:|:-:|:-:|:-:|:-:|
+      | **Sequential** | `Intel i5-1240P` | 16 GB LPDDR5 | - | 467 s (500) | 0.9349 s |
+      | **OpenCL** | `Intel Iris Xe Graphics` (80EU) | LPDDR5 | No Dedicated Memory | 160 s (10000) | 0.0160 s |
+      |||||||
+      | ***Performance Improvement*** ||||| $\times$ ***58*** |
 
-* #### ***Computer 3** (Tablet)*
+   * **Computer 3** (Tablet)
 
-   | Run Type | Processor | Host Memory | Dedicated Memory | Elapsed Time | ET/Image |
-   |:-:|:-:|:-:|:-:|:-:|:-:|
-   | **Sequential** | `Intel m3-6Y30` | 4 GB LPDDR3  | - | 1345 s (500) | 2.6919 s |
-   | **OpenCL** | `Intel HD Graphics 515` | LPDDR3 | No Dedicated Memory | s | s |
-   |||||||
-   | ***Performance Improvement*** ||||| $\times$ ***?*** |
+      | Run Type | Processor | Host Memory | Dedicated Memory | Elapsed Time | ET/Image |
+      |:-:|:-:|:-:|:-:|:-:|:-:|
+      | **Sequential** | `Intel m3-6Y30` | 4 GB LPDDR3  | - | 1345 s (500) | 2.6919 s |
+      | **OpenCL** | `Intel HD Graphics 515` | LPDDR3 | No Dedicated Memory | 774 s (10000) | 0.0774 s |
+      |||||||
+      | ***Performance Improvement*** ||||| $\times$ ***35*** |
 
 
 ## License
