@@ -1,7 +1,7 @@
 # VGG16-OpenCL
 
 
-__This project is an implementation of the VGG16 model pre-trained on the [`CIFAR 10`](https://www.cs.toronto.edu/~kriz/cifar.html) dataset for inference, written in `C` and `OpenCL C`.__
+__`VGG16-OpenCL` is an implementation of the VGG16 model pre-trained on the [`CIFAR 10`](https://www.cs.toronto.edu/~kriz/cifar.html) dataset for inference, written in `C` and `OpenCL C`.__
 
 [`OpenCL`](https://www.khronos.org/opencl/) is a framework for writing programs that execute across heterogeneous platforms consisting of various processors and hardware accelerators. It provides programming languages and APIs to execute programs on these compute devices.
 
@@ -59,40 +59,45 @@ The VGG16 model gained its reputation from the use of small 3 $\times$ 3 convolu
 
 ## Used OpenCL Optimization Techniques
 
-   > TODO
+The single most important thing to consider when optimizing an OpenCL program is reducing global memory accesses as much as possible. Most of the techniques used in this project are variants of reducing global memory accesses.
+
+   * **Tiled Convolution & SGEMM**
+   * **More Work Per Thread**
+   * **Using Vector Datatypes**
+   * **Register Tiling**
 
 
 ## Performance Result
 
 The test was performed on three different computers.
 
-* #### ***Computer 1** (Desktop)*
+   * ***Computer 1** (Desktop)*
 
-   | Run Type | Processor | Host Memory | Dedicated Memory | Elapsed Time | ET/Image |
-   |:-:|:-:|:-:|:-:|:-:|:-:|
-   | **Sequential** | `Intel i5-10400` | 32 GB DDR4  | - | 614 s (500 images) | 1.2270 seconds |
-   | **OpenCL** | `Intel UHD Graphics 630` | DDR4 | No Dedicated Memory | 471 s (10000) | 0.0479 s |
-   | **OpenCL** | `NVIDIA RTX 3060` | DDR4 | 12 GB GDDR6 | 29.1 s (10000) | 0.0029 s |
-   |||||||
-   | ***Performance Improvement*** ||||| $\times$ ***423*** |
+      | Run Type | Processor | Host Memory | Dedicated Memory | Elapsed Time | ET/Image |
+      |:-:|:-:|:-:|:-:|:-:|:-:|
+      | **Sequential** | `Intel i5-10400` | 32 GB DDR4  | - | 614 s (500 images) | 1.2270 seconds |
+      | **OpenCL** | `Intel UHD Graphics 630` | DDR4 | No Dedicated Memory | 471 s (10000) | 0.0479 s |
+      | **OpenCL** | `NVIDIA RTX 3060` | DDR4 | 12 GB GDDR6 | 29.1 s (10000) | 0.0029 s |
+      |||||||
+      | ***Performance Improvement*** ||||| $\times$ ***423*** |
 
-* #### ***Computer 2** (Laptop)*
+   * ***Computer 2** (Laptop)*
 
-   | Run Type | Processor | Host Memory | Dedicated Memory | Elapsed Time | ET/Image |
-   |:-:|:-:|:-:|:-:|:-:|:-:|
-   | **Sequential** | `Intel i5-1240P` | 16 GB LPDDR5 | - | 467 s (500) | 0.9349 s |
-   | **OpenCL** | `Intel Iris Xe Graphics` (80EU) | LPDDR5 | No Dedicated Memory | 160 s (10000) | 0.0160 s |
-   |||||||
-   | ***Performance Improvement*** ||||| $\times$ ***58*** |
+      | Run Type | Processor | Host Memory | Dedicated Memory | Elapsed Time | ET/Image |
+      |:-:|:-:|:-:|:-:|:-:|:-:|
+      | **Sequential** | `Intel i5-1240P` | 16 GB LPDDR5 | - | 467 s (500) | 0.9349 s |
+      | **OpenCL** | `Intel Iris Xe Graphics` (80EU) | LPDDR5 | No Dedicated Memory | 160 s (10000) | 0.0160 s |
+      |||||||
+      | ***Performance Improvement*** ||||| $\times$ ***58*** |
 
-* #### ***Computer 3** (Tablet)*
+   * ***Computer 3** (Tablet)*
 
-   | Run Type | Processor | Host Memory | Dedicated Memory | Elapsed Time | ET/Image |
-   |:-:|:-:|:-:|:-:|:-:|:-:|
-   | **Sequential** | `Intel m3-6Y30` | 4 GB LPDDR3  | - | 1345 s (500) | 2.6919 s |
-   | **OpenCL** | `Intel HD Graphics 515` | LPDDR3 | No Dedicated Memory | 774 s (10000) | 0.0774 s |
-   |||||||
-   | ***Performance Improvement*** ||||| $\times$ ***35*** |
+      | Run Type | Processor | Host Memory | Dedicated Memory | Elapsed Time | ET/Image |
+      |:-:|:-:|:-:|:-:|:-:|:-:|
+      | **Sequential** | `Intel m3-6Y30` | 4 GB LPDDR3  | - | 1345 s (500) | 2.6919 s |
+      | **OpenCL** | `Intel HD Graphics 515` | LPDDR3 | No Dedicated Memory | 774 s (10000) | 0.0774 s |
+      |||||||
+      | ***Performance Improvement*** ||||| $\times$ ***35*** |
 
 
 ## License
