@@ -80,24 +80,24 @@ Assuming four pixels are assigned to a work item, single work-item produces 16 l
 
 ## Performance Result
 
-The test was performed on three different computers.
+The test was performed on three different computers with 3000 images.
 
 ### Computer 1 (Desktop)
 
 | Run Type | Processor | Host Memory | Dedicated Memory | Elapsed Time | ET/Image |
 |:-:|:-:|:-:|:-:|:-:|:-:|
-| **Sequential** | `Intel i5-10400` | 32 GB DDR4  | - | 614 s (500 images) | 1.2270 seconds |
-| **OpenCL** | `Intel UHD Graphics 630` | DDR4 | No Dedicated Memory | 471 s (10000) | 0.0479 s |
-| **OpenCL** | `NVIDIA RTX 3060` | DDR4 | 12 GB GDDR6 | 29.1 s (10000) | 0.0029 s |
+| **Sequential** | `Intel i5-10400` | 32 GB DDR4  | - | 810 s | 0.2702 s/img |
+| **OpenCL** | `Intel UHD Graphics 630` | DDR4 | No Dedicated Memory | 133 s | 0.0444 s/img |
+| **OpenCL** | `NVIDIA RTX 3060` | DDR4 | 12 GB GDDR6 | 8.7 s | 0.0029 s/img |
 
-> ***Performance Improvement: $\times$ 423***
+> ***Performance Improvement: $\times$ 93.1***
 
 ### Computer 2 (Laptop)
 
 | Run Type | Processor | Host Memory | Dedicated Memory | Elapsed Time | ET/Image |
 |:-:|:-:|:-:|:-:|:-:|:-:|
-| **Sequential** | `Intel i5-1240P` | 16 GB LPDDR5 | - | 467 s (500) | 0.9349 s |
-| **OpenCL** | `Intel Iris Xe Graphics` (80EU) | LPDDR5 | No Dedicated Memory | 160 s (10000) | 0.0160 s |
+| **Sequential** | `Intel i5-1240P` | 16 GB LPDDR5 | - | 467 s (500 images) | 0.9349 s |
+| **OpenCL** | `Intel Iris Xe Graphics 80EU` | LPDDR5 | No Dedicated Memory | 160 s (10000) | 0.0160 s |
 
 > ***Performance Improvement $\times$ 58***
 
