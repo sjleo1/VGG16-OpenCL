@@ -90,7 +90,7 @@ The test was performed on three different computers with 3000 images.
 | **OpenCL** | `Intel UHD Graphics 630` | DDR4 | No Dedicated Memory | 133 s | 0.0444 s |
 | **OpenCL** | `NVIDIA RTX 3060` | DDR4 | 12 GB GDDR6 | 8.7 s | 0.0029 s |
 
-> ***Performance Improvement: $\times$ 93.1***
+> ***Performance Improvement:*** $\times$ ***93.1***
 
 ### Computer 2 (Laptop)
 
@@ -99,7 +99,7 @@ The test was performed on three different computers with 3000 images.
 | **Sequential** | `Intel i5-1240P` | 16 GB LPDDR5 | - | 1496 s | 0.4988 s |
 | **OpenCL** | `Intel Iris Xe Graphics 80EU` | LPDDR5 | No Dedicated Memory | 39 s | 0.0130 s |
 
-> ***Performance Improvement $\times$ 22***
+> ***Performance Improvement:*** $\times$ ***22***
 
 ### Computer 3 (Tablet)
 
@@ -108,7 +108,7 @@ The test was performed on three different computers with 3000 images.
 | **Sequential** | `Intel m3-6Y30` | 4 GB LPDDR3  | - | 1345 s (500) | 2.6919 s |
 | **OpenCL** | `Intel HD Graphics 515` | LPDDR3 | No Dedicated Memory | 774 s (10000) | 0.0774 s |
 
-> ***Performance Improvement $\times$ 35***
+> ***Performance Improvement:*** $\times$ ***35***
 
 
 ## License
