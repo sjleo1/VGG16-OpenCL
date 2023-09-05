@@ -67,9 +67,11 @@ Therefore, *tiling* input data from global memory into local memory prior to act
 
 Just as tiling data from global to local memory reduced redundant memory reads, more optimization is possible by further tiling from local memory to private memory (register).
 
-In the previous technique, it has been assumed that each work-item (thread) works for single output pixel or element in a feature map or matrix. However, each work-item still has to read value from multiple input pixels or elements adjacent to each other.
+In the previous technique, it had been set for each work-item (thread) to work for single output pixel/element in a feature map/matrix. However, each work-item still has to read value of multiple input pixels/elements adjacent to each other.
 
-For example, in order to do the 3 $\times$ 3 convolution operation, a work-item has to read nine input pixels tiled into local memory. That's equivalent of **9 local memory reads for a single output pixel**. What if we assign multiple output pixels to a work-item (more work per thread), while also tiling necessary input pixels into private memory (tiling to registers)?
+For example, a work-item has to read nine input pixels tiled into local memory, for the 3 $\times$ 3 convolution operation. That's equivalent to **9 local memory reads for a single output pixel**.
+
+What if we assign multiple output pixels to a work-item (more work per thread), while also tiling input pixels into private memory (tiling to registers)?
 
 Assuming four pixels are assigned to a work item, single work-item produces 16 local memory reads for four output pixels, leading to **4 local memory reads per output pixel**. ***Roughly speaking***, we can expect it to be twice fast as the previous one.
 
