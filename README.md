@@ -86,9 +86,9 @@ The test was performed on three different computers with 3000 images.
 
 | Run Type | Processor | Host Memory | Dedicated Memory | Elapsed Time | ET/Image |
 |:-:|:-:|:-:|:-:|:-:|:-:|
-| **Sequential** | `Intel i5-10400` | 32 GB DDR4  | - | 810 s | 0.2702 s/img |
-| **OpenCL** | `Intel UHD Graphics 630` | DDR4 | No Dedicated Memory | 133 s | 0.0444 s/img |
-| **OpenCL** | `NVIDIA RTX 3060` | DDR4 | 12 GB GDDR6 | 8.7 s | 0.0029 s/img |
+| **Sequential** | `Intel i5-10400` | 32 GB DDR4  | - | 810 s | 0.2702 s |
+| **OpenCL** | `Intel UHD Graphics 630` | DDR4 | No Dedicated Memory | 133 s | 0.0444 s |
+| **OpenCL** | `NVIDIA RTX 3060` | DDR4 | 12 GB GDDR6 | 8.7 s | 0.0029 s |
 
 > ***Performance Improvement: $\times$ 93.1***
 
@@ -96,10 +96,10 @@ The test was performed on three different computers with 3000 images.
 
 | Run Type | Processor | Host Memory | Dedicated Memory | Elapsed Time | ET/Image |
 |:-:|:-:|:-:|:-:|:-:|:-:|
-| **Sequential** | `Intel i5-1240P` | 16 GB LPDDR5 | - | 467 s (500 images) | 0.9349 s |
-| **OpenCL** | `Intel Iris Xe Graphics 80EU` | LPDDR5 | No Dedicated Memory | 160 s (10000) | 0.0160 s |
+| **Sequential** | `Intel i5-1240P` | 16 GB LPDDR5 | - | 1496 s | 0.4988 s |
+| **OpenCL** | `Intel Iris Xe Graphics 80EU` | LPDDR5 | No Dedicated Memory | 39 s | 0.0130 s |
 
-> ***Performance Improvement $\times$ 58***
+> ***Performance Improvement $\times$ 22***
 
 ### Computer 3 (Tablet)
 
